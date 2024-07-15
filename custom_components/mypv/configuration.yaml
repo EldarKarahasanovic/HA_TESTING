@@ -1,0 +1,7 @@
+input_number:
+  thermostat_temperature:
+    name: Thermostat Temperature
+    initial: 20
+    min: 10
+    max: 30
+    step: 0.5
