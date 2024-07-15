@@ -1,10 +1,9 @@
+"""Config flow for Kostal piko integration."""
 import logging
 import voluptuous as vol
 import requests
 import json
-import ipaddress
 from requests.exceptions import HTTPError, ConnectTimeout, RequestException
-from scapy.all import ARP, Ether, srp
 
 from homeassistant import config_entries
 import homeassistant.helpers.config_validation as cv
@@ -45,7 +44,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._filtered_sensor_types = {}
 
     def _host_in_configuration_exists(self, host) -> bool:
-        """Return True if host exists in configuration."""
+        """Return True if site_id exists in configuration."""
         return host in mypv_entries(self.hass)
 
     def _check_host(self, host) -> bool:
@@ -75,7 +74,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             for key, value in SENSOR_TYPES.items():
                 if key in json_keys:
-                    self._filtered_sensor_types[key] = value[0]
+                    self._filtered_sensor_types[key] = value[0]  # only use the first element
 
             if not self._filtered_sensor_types:
                 _LOGGER.warning("No matching sensors found on the device.")
@@ -97,41 +96,15 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     await self.hass.async_add_executor_job(self._get_sensor, self._host)
                     return await self.async_step_sensors()
 
-        # Perform ARP scan to find available hosts in the network
-        available_hosts = await self.hass.async_add_executor_job(self._arp_scan)
+        user_input = user_input or {CONF_HOST: "192.168.0.0"}
 
-        if not available_hosts:
-            _LOGGER.warning("No hosts found on the network.")
-        else:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=vol.Schema({
-                    vol.Required(CONF_HOST): vol.In(available_hosts)
-                }),
-                errors=self._errors
-            )
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST): str
-            }),
-            errors=self._errors
+        setup_schema = vol.Schema(
+            {vol.Required(CONF_HOST, default=user_input[CONF_HOST]): str}
         )
 
-    def _arp_scan(self):
-        """Perform ARP scan to find all hosts in the current network."""
-        network = ipaddress.ip_interface(self.hass.config.api.base_url).network
-        arp = ARP(pdst=str(network))
-        ether = Ether(dst="ff:ff:ff:ff:ff:ff")
-        packet = ether/arp
-        result = srp(packet, timeout=3, verbose=False)[0]
-
-        available_hosts = []
-        for sent, received in result:
-            available_hosts.append(received.psrc)
-
-        return available_hosts
+        return self.async_show_form(
+            step_id="user", data_schema=setup_schema, errors=self._errors
+        )
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
