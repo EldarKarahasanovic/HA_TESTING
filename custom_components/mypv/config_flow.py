@@ -155,22 +155,46 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self._my_pv_flow = None
+        self._filtered_sensor_types = {}
+        self._my_pv_flow = None  # Initialize as None initially
 
     async def async_step_init(self, user_input=None):
-    if user_input is not None:
-        # Assuming _filtered_sensor_types is a list of sensor types you want to filter
-        return self.async_create_entry(title="Mypv Configuration", data=user_input)
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    "use_all_sensors": user_input.get("use_all_sensors", False),
+                    "polling_interval": user_input["polling_interval"],
+                },
+            )
 
-    return self.async_show_form(
-        step_id="init",
-        data_schema=vol.Schema(
+        # Initialize _my_pv_flow if not already initialized
+        if not self._my_pv_flow:
+            self._my_pv_flow = MypvConfigFlow()
+
+        # Fetch sensor data to update _filtered_sensor_types
+        host = self.config_entry.data[CONF_HOST]
+        await self.hass.async_add_executor_job(self._my_pv_flow._get_sensors, host)
+
+        options_schema = vol.Schema(
             {
                 vol.Required(
-                    "sensor_types",
-                    default=self._my_pv_flow._filtered_sensor_types,  # Correct access
+                    "polling_interval",
+                    default=self.config_entry.options.get("polling_interval", 10),
+                ): int,
+                vol.Optional(
+                    "use_all_sensors",
+                    default=self.config_entry.options.get("use_all_sensors", False),
+                ): bool,
+                vol.Required(
+                    CONF_MONITORED_CONDITIONS,
+                    default=self.config_entry.options.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                 ): cv.multi_select(self._my_pv_flow._filtered_sensor_types),
             }
-        ),
-    )
+        )
 
+        return self.async_show_form(step_id="init", data_schema=options_schema)
