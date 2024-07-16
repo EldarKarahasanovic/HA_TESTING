@@ -168,6 +168,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
+        # Get currently selected monitored conditions from options or defaults
         current_options = dict(self.config_entry.options) if self.config_entry.options else {}
         current_monitored_conditions = current_options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
 
@@ -181,4 +182,9 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
+
+    async def async_step_user(self, user_input):
+        """Handle user input."""
+        return await self.async_step_init(user_input)
+
 
