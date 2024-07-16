@@ -150,6 +150,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
 
+
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
@@ -168,7 +169,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
-        # Get currently selected monitored conditions from options or defaults
+        # Get currently selected monitored conditions, fallback to defaults if not set
         current_options = dict(self.config_entry.options) if self.config_entry.options else {}
         current_monitored_conditions = current_options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
 
@@ -183,8 +184,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
 
-    async def async_step_user(self, user_input):
+    async def async_step_user(self, user_input=None):
         """Handle user input."""
         return await self.async_step_init(user_input)
-
-
