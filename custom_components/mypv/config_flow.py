@@ -30,25 +30,6 @@ def mypv_entries(hass: HomeAssistant):
         (entry.data[CONF_HOST]) for entry in hass.config_entries.async_entries(DOMAIN)
     )
 
- def _get_sensors(self, host):
-        """Fetch sensor data and update _filtered_sensor_types."""
-        try:
-            response = requests.get(f"http://{host}/data.jsn", timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            json_keys = set(data.keys())
-            self._filtered_sensor_types = {}
-
-            for key, value in SENSOR_TYPES.items():
-                if key in json_keys:
-                    self._filtered_sensor_types[key] = value[0]
-
-            if not self._filtered_sensor_types:
-                _LOGGER.warning("No matching sensors found on the device.")
-        except RequestException as e:
-            _LOGGER.error(f"Error fetching sensor data: {e}")
-            self._filtered_sensor_types = {}
-
 class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Mypv config flow."""
 
@@ -81,6 +62,25 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error(f"Unexpected error: {e}")
             return False
         return True
+
+    def _get_sensors(self, host):
+        """Fetch sensor data and update _filtered_sensor_types."""
+        try:
+            response = requests.get(f"http://{host}/data.jsn", timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            json_keys = set(data.keys())
+            self._filtered_sensor_types = {}
+
+            for key, value in SENSOR_TYPES.items():
+                if key in json_keys:
+                    self._filtered_sensor_types[key] = value[0]
+
+            if not self._filtered_sensor_types:
+                _LOGGER.warning("No matching sensors found on the device.")
+        except RequestException as e:
+            _LOGGER.error(f"Error fetching sensor data: {e}")
+            self._filtered_sensor_types = {}
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
