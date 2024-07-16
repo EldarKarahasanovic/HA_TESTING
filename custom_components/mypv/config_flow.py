@@ -18,12 +18,16 @@ from .const import DOMAIN, SENSOR_TYPES  # pylint:disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_MONITORED_CONDITIONS = ["temp1"]
+DEFAULT_MONITORED_CONDITIONS = [
+    "temp1"
+]
 
 @callback
 def mypv_entries(hass: HomeAssistant):
     """Return the hosts for the domain."""
-    return set(entry.data[CONF_HOST] for entry in hass.config_entries.async_entries(DOMAIN))
+    return set(
+        (entry.data[CONF_HOST]) for entry in hass.config_entries.async_entries(DOMAIN)
+    )
 
 class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Mypv config flow."""
@@ -57,7 +61,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error(f"Unexpected error: {e}")
             return False
         return True
-
+    
     def _get_sensor(self, host):
         """Fetch sensor data and update _filtered_sensor_types."""
         try:
@@ -65,9 +69,11 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             response.raise_for_status()
             data = response.json()
             json_keys = set(data.keys())
-            self._filtered_sensor_types = {
-                key: value[0] for key, value in SENSOR_TYPES.items() if key in json_keys
-            }
+            self._filtered_sensor_types = {}
+
+            for key, value in SENSOR_TYPES.items():
+                if key in json_keys:
+                    self._filtered_sensor_types[key] = value[0]  #damit nur das erste element genutzt wird
 
             if not self._filtered_sensor_types:
                 _LOGGER.warning("No matching sensors found on the device.")
@@ -85,10 +91,10 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 can_connect = await self.hass.async_add_executor_job(
                     self._check_host, self._host
                 )
-                if can_connect:
+                if (can_connect):
                     await self.hass.async_add_executor_job(self._get_sensor, self._host)
                     return await self.async_step_sensors()
-
+        
         user_input = user_input or {CONF_HOST: "192.168.0.0"}
 
         setup_schema = vol.Schema(
@@ -134,43 +140,3 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.hass.async_add_executor_job(self._check_host, self._host)
         await self.hass.async_add_executor_job(self._get_sensor, self._host)
         return await self.async_step_sensors(user_input)
-
-class MypvOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handles options flow"""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        """Manage the options."""
-        if user_input is not None:
-            return self.async_create_entry(
-                title="",
-                data={
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    "use_all_sensors": user_input["use_all_sensors"],
-                    "polling_interval": user_input["polling_interval"],
-                },
-            )
-
-        options_schema = vol.Schema(
-            {
-                vol.Required(
-                    "polling_interval",
-                    default=self.config_entry.options.get("polling_interval", 10),
-                ): int,
-                vol.Optional(
-                    "use_all_sensors",
-                    default=self.config_entry.options.get("use_all_sensors", False),
-                ): bool,
-                vol.Required(
-                    CONF_MONITORED_CONDITIONS,
-                    default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                    ),
-                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
-            }
-        )
-
-        return self.async_show_form(step_id="init", data_schema=options_schema)
