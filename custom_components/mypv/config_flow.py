@@ -156,7 +156,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
         self._filtered_sensor_types = {}
-        self._my_pv_flow = MypvConfigFlow()
+        self._my_pv_flow = None  # Initialize as None initially
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -170,9 +170,13 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
+        # Initialize _my_pv_flow if not already initialized
+        if not self._my_pv_flow:
+            self._my_pv_flow = MypvConfigFlow()
+
         # Fetch sensor data to update _filtered_sensor_types
         host = self.config_entry.data[CONF_HOST]
-        await self._my_pv_flow.hass.async_add_executor_job(self._my_pv_flow._get_sensors, host)
+        await self.hass.async_add_executor_job(self._my_pv_flow._get_sensors, host)
 
         options_schema = vol.Schema(
             {
