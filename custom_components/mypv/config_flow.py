@@ -146,7 +146,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(self, config_entry):
         entry = config_entry
         return MypvOptionsFlowHandler(config_entry, self._filtered_sensor_types)
 
