@@ -177,7 +177,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
-                ): cv.multi_select(self._filtered_sensor_types),
+                ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
