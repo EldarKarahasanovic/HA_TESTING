@@ -144,29 +144,26 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.hass.async_add_executor_job(self._get_sensors, self._host)
         return await self.async_step_sensors(user_input)
 
-   @staticmethod
+    @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         entry = config_entry
         filtered_sensor_types = entry.data.get('filtered_sensor_types', {})
-        info = entry.data.get('info', {})  # Assuming info is stored in config entry
-        return MypvOptionsFlowHandler(config_entry, filtered_sensor_types, info)
-
+        return MypvOptionsFlowHandler(config_entry, filtered_sensor_types)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types, info) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
         self._filtered_sensor_types = filtered_sensor_types
-        self._info = info  # Store _info
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(
-                title=f"{self._info['device']} - {self._info['number']}",
+                title="",
                 data={
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
@@ -184,4 +181,3 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
