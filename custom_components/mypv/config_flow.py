@@ -1,4 +1,3 @@
-"""Config flow for Kostal piko integration."""
 import logging
 import voluptuous as vol
 import requests
@@ -17,6 +16,8 @@ from homeassistant.core import HomeAssistant, callback
 from .const import DOMAIN, SENSOR_TYPES  # pylint:disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
+
+SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES.keys())
 
 DEFAULT_MONITORED_CONDITIONS = [
     "power1_solar",
@@ -44,7 +45,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._filtered_sensor_types = {}
 
     def _host_in_configuration_exists(self, host) -> bool:
-        """Return True if site_id exists in configuration."""
+        """Return True if host exists in configuration."""
         return host in mypv_entries(self.hass)
 
     def _check_host(self, host) -> bool:
@@ -62,8 +63,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error(f"Unexpected error: {e}")
             return False
         return True
-    
-    def _get_sensor(self, host):
+
+    def _get_sensors(self, host):
         """Fetch sensor data and update _filtered_sensor_types."""
         try:
             response = requests.get(f"http://{host}/data.jsn", timeout=10)
@@ -74,7 +75,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             for key, value in SENSOR_TYPES.items():
                 if key in json_keys:
-                    self._filtered_sensor_types[key] = value[0]  #damit nur das erste element genutzt wird
+                    self._filtered_sensor_types[key] = value[0]
 
             if not self._filtered_sensor_types:
                 _LOGGER.warning("No matching sensors found on the device.")
@@ -92,8 +93,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 can_connect = await self.hass.async_add_executor_job(
                     self._check_host, self._host
                 )
-                if (can_connect):
-                    await self.hass.async_add_executor_job(self._get_sensor, self._host)
+                if can_connect:
+                    await self.hass.async_add_executor_job(self._get_sensors, self._host)
                     return await self.async_step_sensors()
         
         user_input = user_input or {CONF_HOST: "192.168.0.0"}
@@ -139,16 +140,13 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="host_exists")
         self._host = user_input[CONF_HOST]
         await self.hass.async_add_executor_job(self._check_host, self._host)
-        await self.hass.async_add_executor_job(self._get_sensor, self._host)
+        await self.hass.async_add_executor_job(self._get_sensors, self._host)
         return await self.async_step_sensors(user_input)
-    
-        @staticmethod
-        @callback
-        def async_get_options_flow(config_entry):
-            return MypvOptionsFlowHandler(config_entry)
 
-
-
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return MypvOptionsFlowHandler(config_entry)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
@@ -156,6 +154,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
+        self._filtered_sensor_types = {}
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -164,10 +163,14 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 title="",
                 data={
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    "use_all_sensors": user_input["use_all_sensors"],
+                    "use_all_sensors": user_input.get("use_all_sensors", False),
                     "polling_interval": user_input["polling_interval"],
                 },
             )
+
+        # Fetch sensor data to update _filtered_sensor_types
+        host = self.config_entry.data[CONF_HOST]
+        await self.hass.async_add_executor_job(self._get_sensors, host)
 
         options_schema = vol.Schema(
             {
@@ -184,7 +187,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
-                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
+                ): cv.multi_select(self._filtered_sensor_types),
             }
         )
 
