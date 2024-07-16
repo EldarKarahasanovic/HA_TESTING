@@ -148,14 +148,16 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         entry = config_entry
-        return MypvOptionsFlowHandler(config_entry)
+        filtered_sensor_types = entry.data.get('filtered_sensor_types', {})  
+        return MypvOptionsFlowHandler(config_entry, filtered_sensor_types)  
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types: dict) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
+        self.filtered_sensor_types = filtered_sensor_types 
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -167,7 +169,8 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
         
-        filtered_sensor_types = self.config_entry.data.get("filtered_sensor_types", {})
+    
+        filtered_sensor_types = self.config_entry.data.get('filtered_sensor_types', {})
 
         options_schema = vol.Schema(
             {
