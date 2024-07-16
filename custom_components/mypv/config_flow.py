@@ -157,7 +157,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self._filtered_sensor_types = filtered_sensor_types  # Assign filtered_sensor_types here
+        self._filtered_sensor_types = filtered_sensor_types
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -176,7 +176,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
-                ): cv.multi_select(self._filtered_sensor_types),  # Use self._filtered_sensor_types here
+                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
             }
         )
 
