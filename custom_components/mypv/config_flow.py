@@ -148,17 +148,15 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         entry = config_entry
-        filtered_sensor_types = entry.data.get('filtered_sensor_types', {})  
-        return MypvOptionsFlowHandler(config_entry, filtered_sensor_types)  
-
+        return MypvOptionsFlowHandler(config_entry, self._filtered_sensor_types)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types: dict) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self.filtered_sensor_types = filtered_sensor_types 
+		self._filtered_sensor_types = filtered_sensor_types
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -169,17 +167,12 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-    
-        options_schema = vol.Schema(
+		options_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS,
-                    default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                    ),
-                ): cv.multi_select(self.filtered_sensor_types),
+                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
+                ): cv.multi_select(self._filtered_sensor_types),
             }
         )
-
+		
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
