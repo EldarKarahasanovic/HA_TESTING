@@ -111,20 +111,15 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
-        
-            # Save the selected monitored conditions and filtered sensor types
-            data = {
-                CONF_HOST: self._host,
-                CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                '_filtered_sensor_types': self._filtered_sensor_types,
-            }
-        
             return self.async_create_entry(
                 title=f"{self._info['device']} - {self._info['number']}",
-                data=data,
+                data={
+                    CONF_HOST: self._host,
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    '_filtered_sensor_types': self._filtered_sensor_types,
+                },
             )
 
-        # If user input is None, show the form to select sensors
         default_monitored_conditions = (
             [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
         )
@@ -141,7 +136,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
 
-
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
         if self._host_in_configuration_exists(user_input[CONF_HOST]):
@@ -155,7 +149,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
-
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
@@ -174,16 +167,14 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-
-        # Get currently selected monitored conditions, fallback to defaults if not set
-        current_options = dict(self.config_entry.options) if self.config_entry.options else {}
-        current_monitored_conditions = current_options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
-
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    default=current_monitored_conditions,
+                    default=self.config_entry.options.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
