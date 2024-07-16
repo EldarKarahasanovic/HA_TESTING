@@ -116,6 +116,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={
                     CONF_HOST: self._host,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
 
@@ -147,15 +148,15 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
-        return MypvOptionsFlowHandler(config_entry, config_entry.data['_filtered_sensor_types'])
+        return MypvOptionsFlowHandler(config_entry)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry, filtered_sensor_types : dict) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self.filtered_sensor_types = filtered_sensor_types
+        self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
