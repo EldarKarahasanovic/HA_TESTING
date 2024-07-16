@@ -168,6 +168,13 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
+   
+        if not self._my_pv_flow:
+            self._my_pv_flow = MypvConfigFlow()
+
+        host = self.config_entry.data[CONF_HOST]
+        await self.hass.async_add_executor_job(self._my_pv_flow._get_sensors, host)
+
         options_schema = vol.Schema(
             {
                 vol.Required(
