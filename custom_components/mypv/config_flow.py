@@ -169,8 +169,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
         
-    
-        filtered_sensor_types = self.config_entry.data.get('filtered_sensor_types', {})
 
         options_schema = vol.Schema(
             {
@@ -179,7 +177,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
-                ): cv.multi_select(filtered_sensor_types),
+                ): cv.multi_select(self._filtered_sensor_types),
             }
         )
 
