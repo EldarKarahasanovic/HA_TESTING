@@ -165,8 +165,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 title="",
                 data={
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    "use_all_sensors": user_input.get("use_all_sensors", False),
-                    "polling_interval": user_input["polling_interval"],
                 },
             )
 
