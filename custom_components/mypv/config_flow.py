@@ -183,7 +183,3 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
-    async def async_step_user(self, user_input=None):
-        """Handle user input."""
-        return await self.async_step_init(user_input)
