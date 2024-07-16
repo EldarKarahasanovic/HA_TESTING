@@ -168,24 +168,15 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
-        # Initialize _my_pv_flow if not already initialized
+   
         if not self._my_pv_flow:
             self._my_pv_flow = MypvConfigFlow()
 
-        # Fetch sensor data to update _filtered_sensor_types
         host = self.config_entry.data[CONF_HOST]
         await self.hass.async_add_executor_job(self._my_pv_flow._get_sensors, host)
 
         options_schema = vol.Schema(
             {
-                vol.Required(
-                    "polling_interval",
-                    default=self.config_entry.options.get("polling_interval", 10),
-                ): int,
-                vol.Optional(
-                    "use_all_sensors",
-                    default=self.config_entry.options.get("use_all_sensors", False),
-                ): bool,
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
