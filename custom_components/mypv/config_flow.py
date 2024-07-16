@@ -147,7 +147,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        filtered_sensor_types = config_entry.data.get('filtered_sensor_types', {})
+        entry = config_entry
+        filtered_sensor_types = entry.data.get('filtered_sensor_types', {})
         return MypvOptionsFlowHandler(config_entry, filtered_sensor_types)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
@@ -168,14 +169,13 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
-        # Fetch the currently selected monitored conditions from the config entry
-        currently_selected = self.config_entry.options.get(CONF_MONITORED_CONDITIONS, [])
-
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    default=currently_selected
+                    default=self.config_entry.options.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                 ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
             }
         )
