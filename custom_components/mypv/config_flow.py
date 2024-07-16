@@ -18,16 +18,12 @@ from .const import DOMAIN, SENSOR_TYPES  # pylint:disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_MONITORED_CONDITIONS = [
-    "temp1"
-]
+DEFAULT_MONITORED_CONDITIONS = ["temp1"]
 
 @callback
 def mypv_entries(hass: HomeAssistant):
     """Return the hosts for the domain."""
-    return set(
-        (entry.data[CONF_HOST]) for entry in hass.config_entries.async_entries(DOMAIN)
-    )
+    return set(entry.data[CONF_HOST] for entry in hass.config_entries.async_entries(DOMAIN))
 
 class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Mypv config flow."""
@@ -61,7 +57,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.error(f"Unexpected error: {e}")
             return False
         return True
-    
+
     def _get_sensor(self, host):
         """Fetch sensor data and update _filtered_sensor_types."""
         try:
@@ -69,11 +65,9 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             response.raise_for_status()
             data = response.json()
             json_keys = set(data.keys())
-            self._filtered_sensor_types = {}
-
-            for key, value in SENSOR_TYPES.items():
-                if key in json_keys:
-                    self._filtered_sensor_types[key] = value[0]  #damit nur das erste element genutzt wird
+            self._filtered_sensor_types = {
+                key: value[0] for key, value in SENSOR_TYPES.items() if key in json_keys
+            }
 
             if not self._filtered_sensor_types:
                 _LOGGER.warning("No matching sensors found on the device.")
@@ -91,10 +85,10 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 can_connect = await self.hass.async_add_executor_job(
                     self._check_host, self._host
                 )
-                if (can_connect):
+                if can_connect:
                     await self.hass.async_add_executor_job(self._get_sensor, self._host)
                     return await self.async_step_sensors()
-        
+
         user_input = user_input or {CONF_HOST: "192.168.0.0"}
 
         setup_schema = vol.Schema(
