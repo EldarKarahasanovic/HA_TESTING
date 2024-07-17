@@ -111,30 +111,30 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
-            return await self.async_create_entry(
+            return self.async_create_entry(
                 title=f"{self._info['device']} - {self._info['number']}",
                 data={
                     CONF_HOST: self._host,
-                    CONF_MONITORED_CONDITIONS: user_input.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                    ),
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                     '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
 
+        default_monitored_conditions = (
+            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
+        )
+
         setup_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS,
-                    default=DEFAULT_MONITORED_CONDITIONS
+                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
 
-        return await self.async_show_form(
+        return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
-
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
