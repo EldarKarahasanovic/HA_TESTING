@@ -3,7 +3,6 @@
   "config": {
     "step": {
       "user": {
-        "description": "Gib deine IP-Adresse ein",
         "data": {
           "host": "[%key:common::config_flow::data::host%]"
         }
