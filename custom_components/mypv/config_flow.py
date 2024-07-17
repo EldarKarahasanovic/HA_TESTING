@@ -170,7 +170,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     
         options_schema = vol.Schema(
             {
-                vol.Optional(
+                vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
