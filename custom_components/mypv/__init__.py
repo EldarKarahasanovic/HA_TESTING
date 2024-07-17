@@ -60,6 +60,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # Reload entry when its updated.
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
+    # Remove existing setup for sensor component
+    await hass.config_entries.async_unload_platforms(entry, ["sensor"])
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
