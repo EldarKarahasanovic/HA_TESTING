@@ -118,9 +118,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                     '_filtered_sensor_types': self._filtered_sensor_types,
                 },
-                options={
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS]
-                }
             )
 
         default_monitored_conditions = (
@@ -163,38 +160,23 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
-        # Dynamically update filtered_sensor_types before showing the form
-        self.filtered_sensor_types = await self.get_current_sensors()
-
         if user_input is not None:
-            # Save the updated monitored conditions
-            return await self.async_create_entry(
+            return self.async_create_entry(
                 title="",
                 data={
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS,
-                        self.config_entry.data.get(
-                            CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                        ),
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
-    async def get_current_sensors(self):
-        # Placeholder method to fetch the current list of sensors
-        # Implement the logic to fetch the current sensors here
-        updated_sensor_list = {}  # Initialize with an empty dict or fetch the actual sensor list
-        # Assuming the actual fetching logic is implemented and updated_sensor_list is populated correctly
-        # Ensure updated_sensor_list is a dictionary where keys are sensor IDs and values are human-readable names
-        return updated_sensor_list
