@@ -103,14 +103,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=setup_schema,
-            errors=self._errors,
-            description_placeholders={
-                "title": self.hass.config.config_entries.flow.async_progress()
-            },
+            step_id="user", data_schema=setup_schema, errors=self._errors
         )
-
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
@@ -139,14 +133,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         return self.async_show_form(
-            step_id="sensors",
-            data_schema=setup_schema,
-            errors=self._errors,
-            description_placeholders={
-                "title": "Select your sensors"
-            }
+            step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
-
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
