@@ -151,7 +151,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return MypvOptionsFlowHandler(config_entry)
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handles options flow"""
+    """Handles options flow."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
@@ -167,7 +167,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-    
+
         options_schema = vol.Schema(
             {
                 vol.Required(
