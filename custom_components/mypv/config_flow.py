@@ -168,7 +168,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
 
         if user_input is not None:
             # Save the updated monitored conditions
-            return self.async_create_entry(
+            return await self.async_create_entry(
                 title="",
                 data={
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
@@ -189,10 +189,12 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        return await self.async_show_form(step_id="init", data_schema=options_schema)
+        return self.async_show_form(step_id="init", data_schema=options_schema)
 
     async def get_current_sensors(self):
         # Placeholder method to fetch the current list of sensors
         # Implement the logic to fetch the current sensors here
         updated_sensor_list = {}  # Initialize with an empty dict or fetch the actual sensor list
+        # Assuming the actual fetching logic is implemented and updated_sensor_list is populated correctly
+        # Ensure updated_sensor_list is a dictionary where keys are sensor IDs and values are human-readable names
         return updated_sensor_list
