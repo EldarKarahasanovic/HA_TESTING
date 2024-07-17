@@ -1,4 +1,3 @@
-"""Provides the MYPV DataUpdateCoordinator."""
 from datetime import timedelta
 import logging
 import requests
@@ -14,13 +13,14 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class MYPVDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching MYPV data."""
 
     def __init__(self, hass: HomeAssistant, *, config: dict, options: dict):
-        """Initialize global NZBGet data updater."""
+        """Initialize global MYPV data updater."""
         self._host = config[CONF_HOST]
+        self.config = config
+        self.options = options
         self._info = None
         self._setup = None
         self._next_update = 0
@@ -33,17 +33,25 @@ class MYPVDataUpdateCoordinator(DataUpdateCoordinator):
             update_interval=update_interval,
         )
 
-    async def _async_update_data(self) -> dict:
-        """Fetch data from NZBGet."""
+    def update_config(self, config: dict):
+        """Update configuration."""
+        self.config = config
+        self._host = config[CONF_HOST]
 
+    def update_options(self, options: dict):
+        """Update options."""
+        self.options = options
+
+    async def _async_update_data(self) -> dict:
+        """Fetch data from MYPV."""
         def _update_data() -> dict:
-            """Fetch data from NZBGet via sync functions."""
+            """Fetch data from MYPV via sync functions."""
             data = self.data_update()
             if self._info is None:
                 self._info = self.info_update()
 
             if self._setup is None or self._next_update < utcnow().timestamp():
-                self._next_update = utcnow().timestamp() + 120  # 86400
+                self._next_update = utcnow().timestamp() + 120  # 2 minutes
                 self._setup = self.setup_update()
 
             return {
@@ -62,28 +70,34 @@ class MYPVDataUpdateCoordinator(DataUpdateCoordinator):
         """Update inverter data."""
         try:
             response = requests.get(f"http://{self._host}/data.jsn")
-            data = json.loads(response.text)
-            _LOGGER.debug(data)
+            response.raise_for_status()
+            data = response.json()
+            _LOGGER.debug("Data update: %s", data)
             return data
-        except:
-            pass
+        except requests.RequestException as error:
+            _LOGGER.error("Error fetching data: %s", error)
+            raise UpdateFailed(f"Error fetching data: {error}")
 
     def info_update(self):
         """Update inverter info."""
         try:
             response = requests.get(f"http://{self._host}/mypv_dev.jsn")
-            info = json.loads(response.text)
-            _LOGGER.debug(info)
+            response.raise_for_status()
+            info = response.json()
+            _LOGGER.debug("Info update: %s", info)
             return info
-        except:
-            pass
+        except requests.RequestException as error:
+            _LOGGER.error("Error fetching info: %s", error)
+            raise UpdateFailed(f"Error fetching info: {error}")
 
     def setup_update(self):
-        """Update inverter info."""
+        """Update inverter setup."""
         try:
             response = requests.get(f"http://{self._host}/setup.jsn")
-            info = json.loads(response.text)
-            _LOGGER.debug(info)
-            return info
-        except:
-            pass
+            response.raise_for_status()
+            setup = response.json()
+            _LOGGER.debug("Setup update: %s", setup)
+            return setup
+        except requests.RequestException as error:
+            _LOGGER.error("Error fetching setup: %s", error)
+            raise UpdateFailed(f"Error fetching setup: {error}")
