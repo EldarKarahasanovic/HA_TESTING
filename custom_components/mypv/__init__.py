@@ -47,7 +47,7 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up the MYPV integration."""
+    """Load the saved entities."""
     coordinator = MYPVDataUpdateCoordinator(
         hass,
         config=entry.data,
@@ -56,21 +56,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     await coordinator.async_refresh()
 
-    # Register update listener
-    entry.add_update_listener(_async_update_listener)
+      # Reload entry when its updated.
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
-    # Store coordinator
-    if DOMAIN not in hass.data:
-        hass.data[DOMAIN] = {}
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_COORDINATOR: coordinator,
     }
 
-    # Forward entry setups
-    await hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch", "button"])
 
     return True
 
@@ -79,4 +75,3 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle options update."""
     await hass.config_entries.async_reload(entry.entry_id)
-
