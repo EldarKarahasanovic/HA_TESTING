@@ -179,4 +179,4 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        return self.async_show_form(step_id="sensors", data_schema=options_schema)
+        return self.async_show_form(step_id="init", data_schema=options_schema)
