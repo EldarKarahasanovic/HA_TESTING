@@ -54,11 +54,11 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             response.raise_for_status()
             self._info = response.json()
         except (ConnectTimeout, HTTPError) as e:
-            self._errors[CONF_HOST] = "cannot_connect"
+            self._errors[CONF_HOST] = "could_not_connect"
             _LOGGER.error(f"Connection error: {e}")
             return False
         except RequestException as e:
-            self._errors[CONF_HOST] = "unknown_error"
+            self._errors[CONF_HOST] = "unexpected_error"
             _LOGGER.error(f"Unexpected error: {e}")
             return False
         return True
@@ -87,7 +87,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._host = user_input[CONF_HOST]
             if self._host_in_configuration_exists(self._host):
-                self._errors[CONF_HOST] = "already_configured"
+                self._errors[CONF_HOST] = "host_exists"
             else:
                 can_connect = await self.hass.async_add_executor_job(
                     self._check_host, self._host
@@ -99,7 +99,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input = user_input or {CONF_HOST: "192.168.0.0"}
 
         setup_schema = vol.Schema(
-            {vol.Required(CONF_HOST, description="Configure your mypv device", default=user_input[CONF_HOST]): str}
+            {vol.Required(CONF_HOST, default=user_input[CONF_HOST]): str}
         )
 
         return self.async_show_form(
@@ -111,35 +111,35 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
-            return self.async_create_entry(
+            return await self.async_create_entry(
                 title=f"{self._info['device']} - {self._info['number']}",
                 data={
                     CONF_HOST: self._host,
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    CONF_MONITORED_CONDITIONS: user_input.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                     '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
 
-        default_monitored_conditions = (
-            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
-        )
-
         setup_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS, description="Select sensors", default=default_monitored_conditions
+                    CONF_MONITORED_CONDITIONS,
+                    default=DEFAULT_MONITORED_CONDITIONS
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
 
-        return self.async_show_form(
+        return await self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
+
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
         if self._host_in_configuration_exists(user_input[CONF_HOST]):
-            return self.async_abort(reason="already_configured")
+            return self.async_abort(reason="host_exists")
         self._host = user_input[CONF_HOST]
         await self.hass.async_add_executor_job(self._check_host, self._host)
         await self.hass.async_add_executor_job(self._get_sensors, self._host)
@@ -172,7 +172,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    description="Select sensors",
                     default=self.config_entry.options.get(
                         CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
