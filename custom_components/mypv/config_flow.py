@@ -118,6 +118,9 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                     '_filtered_sensor_types': self._filtered_sensor_types,
                 },
+                options={
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS]
+                }
             )
 
         default_monitored_conditions = (
@@ -157,27 +160,24 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
-        self._info = {}
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            self._info['device'] = user_input.get('device', self._info.get('device'))
-            self._info['number'] = user_input.get('number', self._info.get('number'))
+            # Save the updated monitored conditions
             return self.async_create_entry(
-                title=f"{self._info['device']} - {self._info['number']}",
+                title="",
                 data={
-                    CONF_HOST: self.config_entry.data[CONF_HOST],
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    '_filtered_sensor_types': self.filtered_sensor_types,
                 },
             )
+
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                        CONF_MONITORED_CONDITIONS, self.config_entry.data.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
                     ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
