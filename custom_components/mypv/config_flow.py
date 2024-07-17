@@ -161,12 +161,8 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(
-                title="",
-                data={
-                    **self.config_entry.options,
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                },
+            return await self.async_update_options(
+                user_input=user_input,
             )
 
         options_schema = vol.Schema(
@@ -181,3 +177,13 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
+
+    async def async_update_options(self, user_input):
+        """Update config entry options."""
+        return self.async_create_entry(
+            title=self.config_entry.title,
+            data={
+                **self.config_entry.options,
+                CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+            },
+        )
