@@ -150,25 +150,15 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
 
-from typing import Any
-
-import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.const import CONF_MONITORED_CONDITIONS
-
-from .const import DOMAIN, SENSOR_TYPES
-
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handles options flow."""
+    """Handles options flow"""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(
@@ -177,19 +167,16 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, []
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
                     ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
-        return self.async_show_form(
-            step_id="init",
-            data_schema=options_schema,
-        )
+        return self.async_show_form(step_id="init", data_schema=options_schema)
