@@ -107,9 +107,10 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=setup_schema,
             errors=self._errors,
             description_placeholders={
-                "title": "Configure your MYPV device"
-            }
+                "title": self.hass.config.config_entries.flow.async_progress()
+            },
         )
+
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
