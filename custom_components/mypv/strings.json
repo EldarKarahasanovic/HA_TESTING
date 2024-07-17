@@ -3,10 +3,8 @@
   "config": {
     "step": {
       "user": {
-        "description":{
-          "data": {
-            "host": "[%key:common::config_flow::data::host%]"
-          }
+        "description": {
+          "title": "Configure your MYPV device"
         }
       }
     },
