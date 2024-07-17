@@ -46,44 +46,40 @@ class MYPVDataUpdateCoordinator(DataUpdateCoordinator):
                 self._next_update = utcnow().timestamp() + 120  # 86400
                 self._setup = self.setup_update()
 
-            return {
-                "data": data,
-                "info": self._info,
-                "setup": self._setup,
-            }
-
-        try:
-            async with timeout(4):
-                return await self.hass.async_add_executor_job(_update_data)
-        except Exception as error:
-            raise UpdateFailed(f"Invalid response from API: {error}") from error
-
-    def data_update(self):
-        """Update inverter data."""
-        try:
-            response = requests.get(f"http://{self._host}/data.jsn")
-            data = json.loads(response.text)
-            _LOGGER.debug(data)
             return data
-        except:
-            pass
 
-    def info_update(self):
-        """Update inverter info."""
-        try:
-            response = requests.get(f"http://{self._host}/mypv_dev.jsn")
-            info = json.loads(response.text)
-            _LOGGER.debug(info)
-            return info
-        except:
-            pass
+        async with timeout(5):
+            return await self.hass.async_add_executor_job(_update_data)
 
-    def setup_update(self):
-        """Update inverter info."""
+    def data_update(self) -> dict:
+        """Send data request."""
+        response = requests.get(f"http://{self._host}/data.jsn", timeout=10)
         try:
-            response = requests.get(f"http://{self._host}/setup.jsn")
-            info = json.loads(response.text)
-            _LOGGER.debug(info)
-            return info
-        except:
-            pass
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as err:
+            raise UpdateFailed(f"Received bad HTTP response: {err}")
+        except Exception as err:
+            raise UpdateFailed(f"Error fetching data: {err}")
+
+    def info_update(self) -> dict:
+        """Send the information about the device."""
+        response = requests.get(f"http://{self._host}/mypv_dev.jsn", timeout=10)
+        try:
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as err:
+            raise UpdateFailed(f"Received bad HTTP response: {err}")
+        except Exception as err:
+            raise UpdateFailed(f"Error fetching data: {err}")
+
+    def setup_update(self) -> dict:
+        """Send the setup data request."""
+        response = requests.get(f"http://{self._host}/setup.jsn", timeout=10)
+        try:
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as err:
+            raise UpdateFailed(f"Received bad HTTP response: {err}")
+        except Exception as err:
+            raise UpdateFailed(f"Error fetching data: {err}")
