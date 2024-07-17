@@ -28,6 +28,36 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+""" Integration for MYPV AC-Thor"""
+import voluptuous as vol
+
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_MONITORED_CONDITIONS,
+)
+import homeassistant.helpers.config_validation as cv
+
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant
+
+from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR
+from .coordinator import MYPVDataUpdateCoordinator
+
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Required(CONF_HOST): cv.string,
+                vol.Required(CONF_MONITORED_CONDITIONS): vol.All(
+                    cv.ensure_list, [vol.In(list(SENSOR_TYPES))]
+                ),
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Load the saved entities."""
     coordinator = MYPVDataUpdateCoordinator(
