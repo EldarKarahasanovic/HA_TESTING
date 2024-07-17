@@ -164,10 +164,11 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(
                 title="",
                 data={
+                    **self.config_entry.options,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-    
+
         options_schema = vol.Schema(
             {
                 vol.Required(
