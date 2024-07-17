@@ -161,10 +161,14 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
+            self._info['device'] = user_input.get('device', self._info.get('device'))
+            self._info['number'] = user_input.get('number', self._info.get('number'))
             return self.async_create_entry(
-                title="",
+                title=f"{self._info['device']} - {self._info['number']}",
                 data={
+                    CONF_HOST: self._host,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
     
@@ -179,4 +183,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=options_schema)
+        return self.async_show_form(
+            step_id="sensors", data_schema=setup_schema, errors=self._errors
+        )
