@@ -56,6 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     await coordinator.async_refresh()
 
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
