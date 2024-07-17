@@ -12,7 +12,14 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR
+
+from .const import (
+    PLATFORMS,
+    DOMAIN,
+    SENSOR_TYPES,
+    DATA_COORDINATOR,
+)
+
 from .coordinator import MYPVDataUpdateCoordinator
 
 
@@ -70,6 +77,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     return True
 
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        hass.data[DOMAIN].pop(entry.entry_id)
+    return unload_ok
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
