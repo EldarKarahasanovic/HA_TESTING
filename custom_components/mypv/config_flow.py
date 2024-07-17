@@ -157,6 +157,7 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
+        self._info = {}
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -166,9 +167,9 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(
                 title=f"{self._info['device']} - {self._info['number']}",
                 data={
-                    CONF_HOST: self._host,
+                    CONF_HOST: self.config_entry.data[CONF_HOST],
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    '_filtered_sensor_types': self._filtered_sensor_types,
+                    '_filtered_sensor_types': self.filtered_sensor_types,
                 },
             )
         options_schema = vol.Schema(
