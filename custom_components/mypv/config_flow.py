@@ -163,6 +163,9 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
+        # Dynamically update filtered_sensor_types before showing the form
+        self.filtered_sensor_types = await self.get_current_sensors()
+
         if user_input is not None:
             # Save the updated monitored conditions
             return self.async_create_entry(
@@ -177,10 +180,18 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, self.config_entry.data.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
+                        CONF_MONITORED_CONDITIONS,
+                        self.config_entry.data.get(
+                            CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                        ),
                     ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=options_schema)
+        return await self.async_show_form(step_id="init", data_schema=options_schema)
+
+    async def get_current_sensors(self):
+        # Placeholder method to fetch the current list of sensors
+        # Implement the logic to fetch the current sensors here
+        return updated_sensor_list
