@@ -1,7 +1,6 @@
 """ Integration for MYPV AC-Thor"""
 import voluptuous as vol
 
-
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
@@ -14,7 +13,6 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
-
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -29,22 +27,6 @@ CONFIG_SCHEMA = vol.Schema(
     },
     extra=vol.ALLOW_EXTRA,
 )
-
-
-async def async_setup(hass, config):
-    """Platform setup, do nothing."""
-    hass.data.setdefault(DOMAIN, {})
-
-    if DOMAIN not in config:
-        return True
-
-    hass.async_create_task(
-        hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_IMPORT}, data=dict(config[DOMAIN])
-        )
-    )
-    return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Load the saved entities."""
@@ -63,7 +45,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         DATA_COORDINATOR: coordinator,
     }
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch", "button"])
 
     return True
-
