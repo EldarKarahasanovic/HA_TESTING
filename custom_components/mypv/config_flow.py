@@ -152,7 +152,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
-
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
@@ -167,16 +166,15 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-    
-        options_schema = vol.Schema(
-            {
-                vol.Required(
+
+        options_schema = vol.Schema({
+            vol.Required(
+                CONF_MONITORED_CONDITIONS,
+                default=self.config_entry.options.get(
                     CONF_MONITORED_CONDITIONS,
-                    default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                    ),
-                ): cv.multi_select(self.filtered_sensor_types),
-            }
-        )
+                    self.config_entry.data.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
+                ),
+            ): cv.multi_select(self.filtered_sensor_types),
+        })
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
