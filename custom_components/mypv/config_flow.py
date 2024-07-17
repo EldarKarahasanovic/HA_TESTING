@@ -194,4 +194,5 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     async def get_current_sensors(self):
         # Placeholder method to fetch the current list of sensors
         # Implement the logic to fetch the current sensors here
+        updated_sensor_list = {}  # Initialize with an empty dict or fetch the actual sensor list
         return updated_sensor_list
