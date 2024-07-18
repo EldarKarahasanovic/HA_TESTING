@@ -17,28 +17,19 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add an my-PV entry."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
+        DATA_COORDINATOR
+    ]
 
-    current_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get('entities', [])
-    new_entities = []
+    entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
         for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-            new_entities.append(MypvDevice(coordinator, sensor, entry.title))
+            entities.append(MypvDevice(coordinator, sensor, entry.title))
     else:
         for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-            new_entities.append(MypvDevice(coordinator, sensor, entry.title))
-
-    # Add new entities
-    async_add_entities(new_entities)
-
-    # Remove entities that are no longer monitored
-    entities_to_remove = [entity for entity in current_entities if entity.type not in entry.options[CONF_MONITORED_CONDITIONS]]
-    for entity in entities_to_remove:
-        hass.states.async_remove(entity.entity_id)
-
-    # Store current entities
-    hass.data[DOMAIN][entry.entry_id]['entities'] = new_entities
+            entities.append(MypvDevice(coordinator, sensor, entry.title))
+    async_add_entities(entities)
 
 
 class MypvDevice(CoordinatorEntity):
