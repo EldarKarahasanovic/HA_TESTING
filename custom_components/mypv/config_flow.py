@@ -167,7 +167,17 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-    
+
+
+        current_monitored_conditions = self.config_entry.options.get(
+            CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+        )
+
+        default_monitored_conditions = [
+            condition for condition in current_monitored_conditions
+            if condition in self.filtered_sensor_types
+        ]
+
         options_schema = vol.Schema(
             {
                 vol.Required(
