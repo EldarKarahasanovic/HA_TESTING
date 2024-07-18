@@ -17,40 +17,23 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add an my-PV entry."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
-        DATA_COORDINATOR
-    ]
+    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
         for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))  
+            entities.append(MypvDevice(coordinator, sensor, entry.title))
     else:
         for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
             entities.append(MypvDevice(coordinator, sensor, entry.title))
 
-
     async_add_entities(entities)
 
-    #liste löscen
-    # Remove entities that are no longer in the options
-    existing_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get("entities", [])
-    entities_to_remove = []
+    # Store the entities in hass.data for later reference
+    hass.data[DOMAIN][entry.entry_id]["entities"] = entities
 
-    for entity in existing_entities:
-        if entity.type not in entry.options.get(CONF_MONITORED_CONDITIONS, []):
-            entities_to_remove.append(entity)
-
-    if entities_to_remove:
-        for entity in entities_to_remove:
-            await entity.async_remove()
-
-        # Update the list of entities stored in hass.data
-        hass.data[DOMAIN][entry.entry_id]["entities"] = [
-            entity for entity in existing_entities if entity not in entities_to_remove
-        ]
-
+    
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
