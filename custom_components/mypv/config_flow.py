@@ -167,54 +167,16 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-
-        # Get currently selected sensors from options or defaults if not set
-        current_monitored_conditions = self.config_entry.options.get(
-            CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-        )
-
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    default=current_monitored_conditions
+                    default=self.config_entry.options.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
-    async def async_step_remove(self, user_input):
-        """Handle removal of selected sensors."""
-        if user_input is not None:
-            current_conditions = user_input[CONF_MONITORED_CONDITIONS]
-
-            # Remove entities that are no longer selected
-            entities_to_remove = []
-            for entity in self.hass.data[DOMAIN][self.config_entry.entry_id]["entities"]:
-                if entity.type not in current_conditions:
-                    entities_to_remove.append(entity)
-
-            if entities_to_remove:
-                for entity in entities_to_remove:
-                    await entity.async_remove()
-
-                # Update the list of entities stored in hass.data
-                self.hass.data[DOMAIN][self.config_entry.entry_id]["entities"] = [
-                    entity for entity in self.hass.data[DOMAIN][self.config_entry.entry_id]["entities"]
-                    if entity not in entities_to_remove
-                ]
-
-            # Return to the options form
-            return await self.async_step_init()
-
-        return self.async_show_form(
-            step_id="remove",
-            data_schema=vol.Schema({
-                vol.Required(
-                    CONF_MONITORED_CONDITIONS,
-                    description={"sensors"}
-                ): cv.multi_select(self.filtered_sensor_types)
-            })
-        )
-
