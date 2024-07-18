@@ -34,6 +34,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities)
 
     #liste löscen
+    # Remove entities that are no longer in the options
+    existing_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get("entities", [])
+    entities_to_remove = []
+
+    for entity in existing_entities:
+        if entity.type not in entry.options.get(CONF_MONITORED_CONDITIONS, []):
+            entities_to_remove.append(entity)
+
+    if entities_to_remove:
+        for entity in entities_to_remove:
+            await entity.async_remove()
+
+        # Update the list of entities stored in hass.data
+        hass.data[DOMAIN][entry.entry_id]["entities"] = [
+            entity for entity in existing_entities if entity not in entities_to_remove
+        ]
 
 
 class MypvDevice(CoordinatorEntity):
@@ -107,3 +123,11 @@ class MypvDevice(CoordinatorEntity):
             "manufacturer": "my-PV",
             "model": self.model,
         }
+    
+    async def async_remove(self):
+        """Handle removal of entity."""
+        # Clean up resources, if any
+        # For example, if using subscriptions or external connections, unsubscribe or close them here
+
+        # Call parent async_remove method if necessary
+        await super().async_remove()
