@@ -250,44 +250,23 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
 
-    import voluptuous as vol
-from homeassistant import config_entries
-from homeassistant.core import callback
-
-CONF_MONITORED_CONDITIONS = "monitored_conditions"
-DEFAULT_MONITORED_CONDITIONS = []
-
-class MypvOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handles options flow"""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
-
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            # Determine changes in monitored conditions
-            current_conditions = set(self.config_entry.options.get(CONF_MONITORED_CONDITIONS, []))
-            new_conditions = set(user_input[CONF_MONITORED_CONDITIONS])
-
-            # Update the configuration entry with new conditions
-            updated_conditions = list(new_conditions)
             return self.async_create_entry(
                 title="",
                 data={
-                    CONF_MONITORED_CONDITIONS: updated_conditions,
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                 },
             )
-        
-        # Generate the schema with current conditions as default
-        current_conditions = self.config_entry.options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    default=current_conditions,
+                    default=self.config_entry.options.get(
+                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+                    ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
