@@ -1,110 +1,87 @@
-"""The my-PV integration."""
-
+""" Integration for MYPV AC-Thor"""
+import voluptuous as vol
 import logging
-from homeassistant.const import CONF_MONITORED_CONDITIONS
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.const import (
-    UnitOfElectricCurrent,
-    UnitOfFrequency,
-    UnitOfTemperature,
-)
 
-from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_MONITORED_CONDITIONS,
+)
+import homeassistant.helpers.config_validation as cv
+
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant
+
+from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR, PLATFORMS
 from .coordinator import MYPVDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Required(CONF_HOST): cv.string,
+                vol.Required(CONF_MONITORED_CONDITIONS): vol.All(
+                    cv.ensure_list, [vol.In(list(SENSOR_TYPES))]
+                ),
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Add an my-PV entry."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
-        DATA_COORDINATOR
-    ]
 
-    entities = []
+async def async_setup(hass, config):
+    """Platform setup, do nothing."""
+    hass.data.setdefault(DOMAIN, {})
 
-    if CONF_MONITORED_CONDITIONS in entry.options:
+    if DOMAIN not in config:
+        return True
+
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_IMPORT}, data=dict(config[DOMAIN])
+        )
+    )
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Load the saved entities."""
+    coordinator = MYPVDataUpdateCoordinator(
+        hass,
+        config=entry.data,
+        options=entry.options,
+    )
+
+    await coordinator.async_refresh()
+
+    # Reload entry when its updated.
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+
+    if not coordinator.last_update_success:
+        raise ConfigEntryNotReady
+
+    hass.data[DOMAIN][entry.entry_id] = {
+        DATA_COORDINATOR: coordinator,
+    }
+
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch", "button"])
     
-        for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))  
-    else:
-        for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))
 
-            
-    async_add_entities(entities)
-
-    #liste löscen
+    return True
 
 
-class MypvDevice(CoordinatorEntity):
-    """Representation of a my-PV device."""
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        hass.data[DOMAIN].pop(entry.entry_id)
+    return unload_ok
 
-    def __init__(self, coordinator, sensor_type, name):
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._sensor = SENSOR_TYPES[sensor_type][0]
-        self._name = name
-        self.type = sensor_type
-        self._data_source = SENSOR_TYPES[sensor_type][3]
-        self.coordinator = coordinator
-        self._last_value = None
-        self._unit_of_measurement = SENSOR_TYPES[self.type][1]
-        self._icon = SENSOR_TYPES[self.type][2]
-        self.serial_number = self.coordinator.data["info"]["sn"]
-        self.model = self.coordinator.data["info"]["device"]
-        _LOGGER.debug(self.coordinator)
 
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return f"{self._name} {self._sensor}"
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle options update."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
-    @property
-    def state(self):
-        """Return the state of the device."""
-        try:
-            state = self.coordinator.data[self._data_source][self.type]
-            if self.type == "power_act":
-                if relOut is not None and loadNom is not None:
-                    relOut = int(self.coordinator.data[self._data_source]["rel1_out"])
-                    loadNom = int(self.coordinator.data[self._data_source]["load_nom"])
-                state = (relOut * loadNom) + int(state)
-            self._last_value = state
-        except Exception as ex:
-            _LOGGER.error(ex)
-            state = self._last_value
-        if state is None:
-            return state
-        if self._unit_of_measurement == UnitOfFrequency.HERTZ:
-            return state / 1000
-        if self._unit_of_measurement == UnitOfTemperature.CELSIUS:
-            return state / 10
-        if self._unit_of_measurement == UnitOfElectricCurrent.AMPERE:
-            return state / 10
-        return state
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement this sensor expresses itself in."""
-        return self._unit_of_measurement
-
-    @property
-    def icon(self):
-        """Return icon."""
-        return self._icon
-
-    @property
-    def unique_id(self):
-        """Return unique id based on device serial and variable."""
-        return "{} {}".format(self.serial_number, self._sensor)
-
-    @property
-    def device_info(self):
-        """Return information about the device."""
-        return {
-            "identifiers": {(DOMAIN, self.serial_number)},
-            "name": self._name,
-            "manufacturer": "my-PV",
-            "model": self.model,
-        }
