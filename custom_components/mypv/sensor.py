@@ -31,8 +31,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(MypvDevice(coordinator, sensor, entry.title))
     async_add_entities(entities)
 
-    #liste löscen
-
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
