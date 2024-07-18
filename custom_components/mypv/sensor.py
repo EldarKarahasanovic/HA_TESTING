@@ -24,6 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
+        entities.clear()
         for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
             entities.append(MypvDevice(coordinator, sensor, entry.title))  
     else:
