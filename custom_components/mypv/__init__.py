@@ -8,21 +8,14 @@ from homeassistant.const import (
     CONF_MONITORED_CONDITIONS,
 )
 import homeassistant.helpers.config_validation as cv
-from homeassistant.core import HomeAssistant
+
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.core import HomeAssistant
 
-from .const import (
-    PLATFORMS,
-    DOMAIN,
-    SENSOR_TYPES,
-    DATA_COORDINATOR,
-)
-
+from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR, PLATFORMS
 from .coordinator import MYPVDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -30,8 +23,7 @@ CONFIG_SCHEMA = vol.Schema(
             {
                 vol.Required(CONF_HOST): cv.string,
                 vol.Required(CONF_MONITORED_CONDITIONS): vol.All(
-                    cv.ensure_list,
-                    [vol.In(list(SENSOR_TYPES))],
+                    cv.ensure_list, [vol.In(list(SENSOR_TYPES))]
                 ),
             }
         )
@@ -52,22 +44,22 @@ async def async_setup(hass, config):
             DOMAIN, context={"source": SOURCE_IMPORT}, data=dict(config[DOMAIN])
         )
     )
-
     return True
 
 
-async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Load the saved entities."""
-
     coordinator = MYPVDataUpdateCoordinator(
         hass,
         config=entry.data,
         options=entry.options,
     )
+
     await coordinator.async_refresh()
 
     # Reload entry when its updated.
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
@@ -76,9 +68,8 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
         DATA_COORDINATOR: coordinator,
     }
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch", "button"])
+    
 
     return True
 
