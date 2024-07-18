@@ -204,26 +204,19 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
-        if user_input is not None:
-            self._info['device'] = user_input.get('device', self._info.get('device'))
-            self._info['number'] = user_input.get('number', self._info.get('number'))
+        if user_input is not None:                
             return self.async_create_entry(
-                title=f"{self._info['device']} - {self._info['number']}",
+                title=f"{self._devices[self._host]}",
                 data={
                     CONF_HOST: self._host,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
-
-        default_monitored_conditions = (
-            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
-        )
 
         setup_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
+                    CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED_CONDITIONS
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
@@ -231,7 +224,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
-
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
@@ -258,37 +250,46 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
 
+    import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.core import callback
+
+CONF_MONITORED_CONDITIONS = "monitored_conditions"
+DEFAULT_MONITORED_CONDITIONS = []
+
+class MypvOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handles options flow"""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+        self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            if CONF_MONITORED_CONDITIONS in user_input:
-                return self.async_create_entry(
-                    title="",
-                    data={
-                        CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                    },
-                )
+            # Determine changes in monitored conditions
+            current_conditions = set(self.config_entry.options.get(CONF_MONITORED_CONDITIONS, []))
+            new_conditions = set(user_input[CONF_MONITORED_CONDITIONS])
 
+            # Update the configuration entry with new conditions
+            updated_conditions = list(new_conditions)
             return self.async_create_entry(
                 title="",
                 data={
-                    CONF_MONITORED_CONDITIONS: [],
+                    CONF_MONITORED_CONDITIONS: updated_conditions,
                 },
             )
-
-        # Retrieve currently selected sensors
-        selected_sensors = self.config_entry.options.get(CONF_MONITORED_CONDITIONS, [])
-
+        
+        # Generate the schema with current conditions as default
+        current_conditions = self.config_entry.options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
-                    default=selected_sensors,
+                    default=current_conditions,
                 ): cv.multi_select(self.filtered_sensor_types),
             }
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
-
-    
