@@ -33,7 +33,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
     # Store the entities in hass.data for later reference
     hass.data[DOMAIN][entry.entry_id]["entities"] = entities
 
-    
+    # Remove entities that are no longer in the options
+    existing_entities = hass.data[DOMAIN][entry.entry_id].get("entities", [])
+    entities_to_remove = []
+
+    for entity in existing_entities:
+        if entity.type not in entry.options.get(CONF_MONITORED_CONDITIONS, []):
+            entities_to_remove.append(entity)
+
+    if entities_to_remove:
+        for entity in entities_to_remove:
+            await entity.async_remove()
+
+        # Update the list of entities stored in hass.data
+        hass.data[DOMAIN][entry.entry_id]["entities"] = [
+            entity for entity in existing_entities if entity not in entities_to_remove
+        ]
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
