@@ -21,14 +21,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
         DATA_COORDINATOR
     ]
 
-    
-    existing_entities = [
-        entity for entity in hass.data[DOMAIN][entry.entry_id]["entities"]
-    ]
-    if existing_entities:
-        for entity in existing_entities:
-            await entity.async_remove()
-
     entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
@@ -39,7 +31,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(MypvDevice(coordinator, sensor, entry.title))
     async_add_entities(entities)
 
-    #liste löschen
+    #liste löscen
 
 
 class MypvDevice(CoordinatorEntity):
