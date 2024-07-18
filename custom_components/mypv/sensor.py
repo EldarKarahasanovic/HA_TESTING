@@ -17,22 +17,32 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add an my-PV entry."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
-        DATA_COORDINATOR
-    ]
+    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    entities = []
-
+    # Get the list of selected sensors from the options or entry data
     if CONF_MONITORED_CONDITIONS in entry.options:
-        entities = []
-        #for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-         #   entities.append(MypvDevice(coordinator, sensor, entry.title))  
+        selected_sensors = entry.options[CONF_MONITORED_CONDITIONS]
     else:
-        for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))
-    async_add_entities(entities)
+        selected_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-    #liste löscen
+    # Clear all existing entities associated with this entry
+    existing_entities = []
+    for entity in hass.data[DOMAIN][entry.entry_id]["entities"]:
+        await entity.async_remove()
+        existing_entities.append(entity)
+
+    # Remove entities from the list
+    for entity in existing_entities:
+        hass.data[DOMAIN][entry.entry_id]["entities"].remove(entity)
+
+    # Create new entities for selected sensors
+    new_entities = []
+    for sensor in selected_sensors:
+        new_entities.append(MypvDevice(coordinator, sensor, entry.title))
+
+    # Add the new entities
+    async_add_entities(new_entities)
+
 
 
 class MypvDevice(CoordinatorEntity):
