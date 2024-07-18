@@ -111,7 +111,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
-            monitored_conditions = user_input[CONF_MONITORED_CONDITIONS]
             return self.async_create_entry(
                 title=f"{self._info['device']} - {self._info['number']}",
                 data={
@@ -122,7 +121,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         default_monitored_conditions = (
-             self.config_entry.options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS)
+            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
         )
 
         setup_schema = vol.Schema(
