@@ -204,14 +204,21 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
-        if user_input is not None:                
+        if user_input is not None:
+            self._info['device'] = user_input.get('device', self._info.get('device'))
+            self._info['number'] = user_input.get('number', self._info.get('number'))
             return self.async_create_entry(
-                title=f"{self._devices[self._host]}",
+                title=f"{self._info['device']} - {self._info['number']}",
                 data={
                     CONF_HOST: self._host,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    '_filtered_sensor_types': self._filtered_sensor_types,
                 },
             )
+
+        default_monitored_conditions = (
+            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
+        )
 
         setup_schema = vol.Schema(
             {
