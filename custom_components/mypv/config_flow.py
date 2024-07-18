@@ -161,22 +161,23 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(
-                title="",
-                data={
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
-                },
-            )
+            # Process the new selection of monitored conditions
+            new_conditions = user_input[CONF_MONITORED_CONDITIONS]
+        
+            # Update the configuration entry with the new selection
+            self.config_entry.options[CONF_MONITORED_CONDITIONS] = new_conditions
+        
+            # Save the updated configuration entry
+            await self.hass.config_entries.async_update_entry(self.config_entry)
+        
+            # Create and return the entry for the updated options
+            return self.async_create_entry(title="", data={CONF_MONITORED_CONDITIONS: new_conditions})
     
-        options_schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_MONITORED_CONDITIONS,
-                    default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
-                    ),
-                ): cv.multi_select(self.filtered_sensor_types),
-            }
-        )
+        options_schema = vol.Schema({
+            vol.Required(
+                CONF_MONITORED_CONDITIONS,
+                default=self.config_entry.options.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS),
+            ): cv.multi_select(self.filtered_sensor_types),
+        })
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
