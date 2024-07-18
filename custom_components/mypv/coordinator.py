@@ -87,3 +87,8 @@ class MYPVDataUpdateCoordinator(DataUpdateCoordinator):
             return info
         except:
             pass
+
+    async def async_update_options(self, options):
+        """Update options and refresh data."""
+        self.config.update(options)
+        await self.async_refresh()
