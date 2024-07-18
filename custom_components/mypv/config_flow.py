@@ -223,7 +223,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         setup_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED_CONDITIONS
+                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
@@ -231,6 +231,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
+
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
