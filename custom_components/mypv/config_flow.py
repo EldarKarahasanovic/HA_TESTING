@@ -180,3 +180,14 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
+
+    async def async_create_entry(self, title: str, data: dict):
+        """Create an entry."""
+        # Update the config entry options with new data
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, options=data
+        )
+        
+        # Reload the entry to apply the changes
+        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        return self.async_show_entry()
