@@ -1,5 +1,6 @@
 """Constants for the MYPV Piko integration."""
 from datetime import timedelta
+from dataclasses import dataclass
 
 from homeassistant.const import (
     UnitOfPower,
