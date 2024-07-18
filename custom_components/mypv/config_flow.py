@@ -44,10 +44,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._filtered_sensor_types = {}
 
     def _host_in_configuration_exists(self, host) -> bool:
-        """Return True if site_id exists in configuration."""
-        if host in mypv_entries(self.hass):
-            return True
-        return False
+        """Return True if host exists in configuration."""
+        return host in mypv_entries(self.hass)
 
     def _check_host(self, host) -> bool:
         """Check if we can connect to the mypv."""
@@ -149,9 +147,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
-
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
