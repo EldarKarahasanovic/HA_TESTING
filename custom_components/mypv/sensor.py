@@ -15,8 +15,10 @@ from .coordinator import MYPVDataUpdateCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
+
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Add an my-PV entry."""
+    """Add a my-PV entry."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     if CONF_MONITORED_CONDITIONS in entry.options:
@@ -24,19 +26,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
     else:
         monitored_conditions = entry.data[CONF_MONITORED_CONDITIONS]
 
-    current_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get('entities', [])
+    # Create a list to store the new entities
     new_entities = []
 
     for sensor in monitored_conditions:
         new_entities.append(MypvDevice(coordinator, sensor, entry.title))
 
-    # Remove entities that are no longer part of the monitored conditions
-    entities_to_remove = [entity for entity in current_entities if entity.type not in monitored_conditions]
-    for entity in entities_to_remove:
-        await entity.async_remove()
+    # Get the entity registry
+    entity_registry = async_get_entity_registry(hass)
 
+    # Get the current entities for the integration
+    current_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get('entities', [])
+
+    # Find entities to remove
+    entities_to_remove = [entity for entity in current_entities if entity.type not in monitored_conditions]
+
+    # Remove entities that are no longer part of the monitored conditions
+    for entity in entities_to_remove:
+        entity_registry.async_remove(entity.entity_id)
+
+    # Add new entities
     hass.data[DOMAIN].setdefault(entry.entry_id, {})['entities'] = new_entities
     async_add_entities(new_entities)
+
 
 
  
