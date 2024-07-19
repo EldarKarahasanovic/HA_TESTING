@@ -14,35 +14,31 @@ from .coordinator import MYPVDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-
 from homeassistant.helpers.entity_registry import async_get
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add or update my-PV entry."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    # Determine configured sensors
+    
     if CONF_MONITORED_CONDITIONS in entry.options:
         configured_sensors = entry.options[CONF_MONITORED_CONDITIONS]
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-    # Fetch current entities from the entity registry
     entity_registry = async_get(hass)
     current_entities = [entity for entity in entity_registry.entities.values() if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id]
 
-    # Determine sensors to remove (not in the new configuration)
     sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
-    # Remove these sensors from the entity registry
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    # Add new sensors
     entities = [MypvDevice(coordinator, sensor, entry.title) for sensor in configured_sensors]
     async_add_entities(entities)
 
- 
+
+
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
 
