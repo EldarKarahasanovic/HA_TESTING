@@ -165,6 +165,9 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
             new_monitored_conditions = user_input[CONF_MONITORED_CONDITIONS]
 
             if set(current_monitored_conditions) != set(new_monitored_conditions):
+                await self.hass.config_entries.async_update_entry(
+                    self.config_entry, options=user_input
+                )
                 await self.hass.config_entries.async_reload(self.config_entry.entry_id)
 
             return self.async_create_entry(
