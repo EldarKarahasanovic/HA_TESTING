@@ -24,16 +24,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
-        for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))  
+        entities = []
+    for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
+        entities.append(MypvDevice(coordinator, sensor, entry.title))
     else:
-        for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))
+    # This branch runs during initial configuration.
+        entities = []
+    for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
+        entities.append(MypvDevice(coordinator, sensor, entry.title))
+
+    # Check if there are sensors in entry.data that are not in entry.options and remove them.
+    if CONF_MONITORED_CONDITIONS in entry.data:
+        valid_sensors = [sensor for sensor in entry.data[CONF_MONITORED_CONDITIONS] if sensor in entry.options.get(CONF_MONITORED_CONDITIONS, [])]
+        entry.data[CONF_MONITORED_CONDITIONS] = valid_sensors
+
     async_add_entities(entities)
 
-    #liste löscen
 
-
+ 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
 
