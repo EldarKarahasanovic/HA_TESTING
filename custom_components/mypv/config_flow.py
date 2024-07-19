@@ -2,9 +2,12 @@ import logging
 import voluptuous as vol
 import ipaddress
 import aiohttp
+import aiofiles
 import asyncio
+import json
 import socket
 from aiohttp import ClientTimeout
+from aiofiles import os as aio_os
 
 from homeassistant import config_entries
 import homeassistant.helpers.config_validation as cv
@@ -15,11 +18,9 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN, SENSOR_TYPES  # pylint:disable=unused-import
+from .const import DOMAIN, SENSOR_TYPES, DEFAULT_MENU_OPTIONS
 
 _LOGGER = logging.getLogger(__name__)
-
-SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES.keys())
 
 DEFAULT_MONITORED_CONDITIONS = [
     "temp1"
@@ -80,14 +81,38 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
+        try:
+            translation = await self._get_translations()
+        except Exception:
+            translation = DEFAULT_MENU_OPTIONS
+        
         return self.async_show_menu(
             step_id="user",
             menu_options={
-                "ip_known": "IP address",
-                "ip_unknown": "IP subnet scan",
-                "automatic_scan" : "Automatic scan for my-PV devices in your local network"
+                "ip_known": translation.get("ip_known"),
+                "ip_unknown": translation.get("ip_unknown"),
+                "automatic_scan" : translation.get("automatic_scan")
             },
-        )  
+        )
+
+    async def _get_translations(self):
+        language = self.hass.config.language
+        filepath = f"custom_components/mypv/translations/{language}.json"
+        if not await aio_os.path.exists(filepath):
+            filepath = "custom_components/mypv/translations/en.json"
+        try:
+            async with aiofiles.open(filepath, mode='r') as file:
+                data = await file.read()
+
+            data = json.loads(data)
+            menu_options = data['config']['step']['user']['menu_options']
+            return menu_options
+        except json.JSONDecodeError:
+            raise ValueError(f"Error during parsing from {filepath}.")
+        except KeyError as e:
+            raise KeyError(f"Missing keys in the JSON data: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Unexpected error: {e}")
     
     async def async_step_ip_known(self, user_input=None):
         if user_input is not None:
@@ -179,6 +204,25 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return False
         ip = subnet + ".0"
         return self.is_valid_ip(ip)
+    
+    def get_own_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(('8.8.8.8', 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = None
+            _LOGGER.error("Unable to get IP address")
+        finally:
+            s.close()
+        return ip
+    
+    def get_subnet(self, ip):
+        if self.is_valid_ip(ip):
+            octets = ip.split('.')
+            subnet = f"{octets[0]}.{octets[1]}.{octets[2]}"
+            return subnet
+        return None
         
     async def check_ip_device(self, ip):
         async with aiohttp.ClientSession() as session:
@@ -216,6 +260,8 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
+        self._errors = {}
+        
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
@@ -235,7 +281,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         setup_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
+                    CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED_CONDITIONS
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
@@ -243,6 +289,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
+
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
         if self._host_in_configuration_exists(user_input[CONF_HOST]):
@@ -253,29 +300,12 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self._get_sensor(self._host)
         return await self.async_step_sensors(user_input)
     
-    def get_own_ip(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            s.connect(('8.8.8.8', 80))
-            ip = s.getsockname()[0]
-        except Exception:
-            ip = None
-            _LOGGER.error("Unable to get IP address")
-        finally:
-            s.close()
-        return ip
-    
-    def get_subnet(self, ip):
-        if self.is_valid_ip(ip):
-            octets = ip.split('.')
-            subnet = f"{octets[0]}.{octets[1]}.{octets[2]}"
-            return subnet
-        return None
-    
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
+    
+
 
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
