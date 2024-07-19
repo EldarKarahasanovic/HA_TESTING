@@ -90,7 +90,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )  
     
     async def async_step_ip_known(self, user_input=None):
-        if user_input is not None and user_input.get(CONF_MONITORED_CONDITIONS):
+        if user_input is not None:
             self._host = user_input[CONF_HOST]
             if self.is_valid_ip(self._host):
                 device = await self.check_ip_device(self._host)
@@ -236,7 +236,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
-                ): cv.multi_select(self._filtered_sensor_types),
+                ): cv.multi_select(self._filtered_sensor_types, default=default_monitored_conditions),
             }
         )
 
