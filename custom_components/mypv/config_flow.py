@@ -90,7 +90,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )  
     
     async def async_step_ip_known(self, user_input=None):
-        if user_input is not None:
+        if user_input is not None and user_input.get(CONF_MONITORED_CONDITIONS):
             self._host = user_input[CONF_HOST]
             if self.is_valid_ip(self._host):
                 device = await self.check_ip_device(self._host)
