@@ -236,7 +236,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
-                ): cv.multi_select(self._filtered_sensor_types, default=default_monitored_conditions),
+                ): cv.multi_select(self._filtered_sensor_types),
             }
         )
 
