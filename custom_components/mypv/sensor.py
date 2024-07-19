@@ -17,32 +17,32 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add an my-PV entry."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
-        DATA_COORDINATOR
-    ]
-
-    entities = []
+    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     if CONF_MONITORED_CONDITIONS in entry.options:
-        entities = []
-    for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-        entities.append(MypvDevice(coordinator, sensor, entry.title))
+        monitored_conditions = entry.options[CONF_MONITORED_CONDITIONS]
     else:
-    # This branch runs during initial configuration.
-        entities = []
-    for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-        entities.append(MypvDevice(coordinator, sensor, entry.title))
+        monitored_conditions = entry.data[CONF_MONITORED_CONDITIONS]
 
-    # Check if there are sensors in entry.data that are not in entry.options and remove them.
-    if CONF_MONITORED_CONDITIONS in entry.data:
-        valid_sensors = [sensor for sensor in entry.data[CONF_MONITORED_CONDITIONS] if sensor in entry.options.get(CONF_MONITORED_CONDITIONS, [])]
-        entry.data[CONF_MONITORED_CONDITIONS] = valid_sensors
+    current_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get('entities', [])
+    new_entities = []
 
-    async_add_entities(entities)
+    for sensor in monitored_conditions:
+        new_entities.append(MypvDevice(coordinator, sensor, entry.title))
+
+    # Remove entities that are no longer part of the monitored conditions
+    entities_to_remove = [entity for entity in current_entities if entity.type not in monitored_conditions]
+    for entity in entities_to_remove:
+        await entity.async_remove()
+
+    hass.data[DOMAIN].setdefault(entry.entry_id, {})['entities'] = new_entities
+    async_add_entities(new_entities)
 
 
  
-class MypvDevice(CoordinatorEntity):
+from homeassistant.helpers.entity import Entity
+
+class MypvDevice(CoordinatorEntity, Entity):
     """Representation of a my-PV device."""
 
     def __init__(self, coordinator, sensor_type, name):
@@ -71,9 +71,8 @@ class MypvDevice(CoordinatorEntity):
         try:
             state = self.coordinator.data[self._data_source][self.type]
             if self.type == "power_act":
-                if relOut is not None and loadNom is not None:
-                    relOut = int(self.coordinator.data[self._data_source]["rel1_out"])
-                    loadNom = int(self.coordinator.data[self._data_source]["load_nom"])
+                relOut = int(self.coordinator.data[self._data_source]["rel1_out"])
+                loadNom = int(self.coordinator.data[self._data_source]["load_nom"])
                 state = (relOut * loadNom) + int(state)
             self._last_value = state
         except Exception as ex:
@@ -113,3 +112,7 @@ class MypvDevice(CoordinatorEntity):
             "manufacturer": "my-PV",
             "model": self.model,
         }
+
+    async def async_remove(self):
+        """Handle removal of entity."""
+        await self.async_remove()
