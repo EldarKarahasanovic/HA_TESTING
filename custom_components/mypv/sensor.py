@@ -21,26 +21,38 @@ async def async_setup_entry(hass, entry, async_add_entities):
         DATA_COORDINATOR
     ]
 
-    entities = []
+    # Initialize a list to hold new entities
+    new_entities = []
 
-    if CONF_MONITORED_CONDITIONS in entry.options:
-        # Clear existing entities (this part is tricky; see note below)
-        old_entities = [
-            entity for entity in hass.data[DOMAIN][entry.entry_id].get("entities", [])
-            if isinstance(entity, MypvDevice)
-        ]
-        for entity in old_entities:
+    # Get current entities from entry data
+    current_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get("entities", {})
+
+    # Determine which sensors are configured now
+    new_sensors = entry.options.get(CONF_MONITORED_CONDITIONS, entry.data[CONF_MONITORED_CONDITIONS])
+
+    # Create a set of existing sensor types for easy lookup
+    existing_sensor_types = {entity.unique_id for entity in current_entities.values()}
+
+    # Create new entities and track them by unique_id
+    for sensor_type in new_sensors:
+        unique_id = f"{entry.entry_id}-{sensor_type}"
+        if unique_id not in existing_sensor_types:
+            new_entities.append(MypvDevice(coordinator, sensor_type, entry.title))
+
+    # Add new entities
+    async_add_entities(new_entities)
+
+    # Remove old entities that are no longer in the configuration
+    for sensor_id, entity in current_entities.items():
+        if sensor_id not in new_sensors:
+            _LOGGER.info(f"Removing old entity: {sensor_id}")
             entity.async_remove()
+            hass.data[DOMAIN][entry.entry_id]["entities"].pop(sensor_id, None)
 
-        # Recreate entities based on new options
-        for sensor in entry.options[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))
-    else:
-        # Create entities based on default configuration
-        for sensor in entry.data[CONF_MONITORED_CONDITIONS]:
-            entities.append(MypvDevice(coordinator, sensor, entry.title))
-        
-    async_add_entities(entities)
+    # Add new entities to the tracked list
+    for entity in new_entities:
+        hass.data[DOMAIN][entry.entry_id]["entities"][entity.unique_id] = entity
+
 
 
  
