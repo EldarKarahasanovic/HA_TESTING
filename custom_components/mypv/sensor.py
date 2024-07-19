@@ -24,8 +24,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     if CONF_MONITORED_CONDITIONS in entry.options:
-        # Clear existing entities
-        for entity in hass.data[DOMAIN][entry.entry_id]["entities"]:
+        # Clear existing entities (this part is tricky; see note below)
+        old_entities = [
+            entity for entity in hass.data[DOMAIN][entry.entry_id].get("entities", [])
+            if isinstance(entity, MypvDevice)
+        ]
+        for entity in old_entities:
             entity.async_remove()
 
         # Recreate entities based on new options
@@ -37,6 +41,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(MypvDevice(coordinator, sensor, entry.title))
         
     async_add_entities(entities)
+
 
  
 class MypvDevice(CoordinatorEntity):
