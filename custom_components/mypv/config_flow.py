@@ -277,7 +277,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         default_monitored_conditions = (
-            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
+            DEFAULT_MONITORED_CONDITIONS
         )
 
         setup_schema = vol.Schema(
