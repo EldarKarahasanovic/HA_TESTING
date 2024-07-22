@@ -26,7 +26,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
     entity_registry = async_get(hass)
-    
     current_entities = [
         entity
         for entity in entity_registry.entities.values()
