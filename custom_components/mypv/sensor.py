@@ -27,34 +27,36 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entity_registry = async_get(hass)
 
-    current_entities = []
+    current_sensors = []
+    current_switches = []
+    
     for entity in entity_registry.entities.values():
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
-            current_entities.append(entity.entity_id)
+            if entity.entity_id.endswith('_device_state'):
+                current_switches.append(entity.entity_id)
+            else:
+                current_sensors.append(entity.entity_id)
 
-    new_sensor_ids = [f"{entry.entry_id}_{sensor}" for sensor in configured_sensors]
-    new_sensor_ids_set = set(new_sensor_ids)
-    
-    # Filter out existing sensors and switches
-    sensors_to_remove = [entity_id for entity_id in current_entities if entity_id not in new_sensor_ids_set]
+    new_sensor = []
+    for sensor in configured_sensors:
+        new_sensor_id = f"{entry.entry_id}_{sensor}"
+        new_sensor.append(new_sensor_id)
 
-    for entity_id in sensors_to_remove:
-        entity_registry.async_remove(entity_id)
+    sensors_to_remove = [entity for entity in current_sensors if entity.entity_id not in configured_sensors]
+
+    for entity in sensors_to_remove:
+        entity_registry.async_remove(entity.entity_id)
 
     entities_to_add = []
     for sensor in configured_sensors:
         new_sensor_id = f"{entry.entry_id}_{sensor}"
-        if new_sensor_id not in current_entities:
+        if new_sensor_id not in current_sensors:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
-    # Add the switch entity
-    if f"{entry.entry_id}_device_state" not in current_entities:
-        new_switch = ToggleSwitch(coordinator, entry.data[CONF_HOST], entry.title)
-        entities_to_add.append(new_switch)
     
     async_add_entities(entities_to_add)
-
+    
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
