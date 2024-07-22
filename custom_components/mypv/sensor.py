@@ -36,9 +36,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     current_entities = []
     for entity in entity_registry.entities.values():
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
-            # _LOGGER.warning(f"Entity name: {entity.name}")
-            if entity.name != "Device state":
-                current_entities.append(entity)
+            current_entities.append(entity)
+           
+                
 
     new_sensor = []
     for sensor in configured_sensors:
