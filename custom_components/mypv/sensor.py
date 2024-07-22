@@ -51,8 +51,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
-    toggle_switch = ToggleSwitch(coordinator, entry.title)
-    entities_to_add.append(toggle_switch)
 
     async_add_entities(entities_to_add)
 
