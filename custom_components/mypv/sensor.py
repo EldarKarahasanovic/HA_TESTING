@@ -27,10 +27,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entity_registry = async_get(hass)
     current_entities = [
-    entity
-    for entity in entity_registry.entities.values()
-    if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id and entity.entity_type != "switch"
-]
+        entity
+        for entity in entity_registry.entities.values()
+        if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id and entity.entity_type != "switch"
+    ]
 
     new_sensor = []
     for sensor in configured_sensors:
