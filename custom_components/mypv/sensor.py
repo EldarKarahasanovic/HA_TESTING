@@ -33,14 +33,17 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entity for entity in entity_registry.entities.values() 
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id
     ]
+
+    _LOGGER.warning(f"Current Entities: {current_entities}")
     
     sensors_to_remove = [
         entity for entity in current_entities 
         if entity.entity_id not in configured_sensors
     ]
 
-    _LOGGER.warning(sensors_to_remove)
-
+    _LOGGER.warning(f"Sensors to remove: {sensors_to_remove}")
+    _LOGGER.warning(f"Configured sensors: {configured_sensors}")
+    _LOGGER.warning(f"Entity: {entity}")
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
