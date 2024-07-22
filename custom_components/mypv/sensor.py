@@ -26,33 +26,34 @@ async def async_setup_entry(hass, entry, async_add_entities):
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
+   # Holen Sie sich das Entity-Registry-Objekt
     entity_registry = async_get(hass)
-    
-    current_entities = []
-    for entity in entity_registry.entities.values():
-        if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
-            #if entity.name != "Device state":
-            current_entities.append(entity)
 
-    new_sensor = []
-    for sensor in configured_sensors:
-        new_sensor_id = f"{entry.entry_id}_{sensor}"
-        new_sensor.append(new_sensor_id)
+    # Finden Sie alle aktuellen Entitäten für diese Domain und Konfigurationseintrag
+    current_entities = [
+        entity for entity in entity_registry.entities.values() 
+        if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id
+    ]
 
-    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
+    # Bestimmen Sie die Sensoren, die entfernt werden sollen
+    sensors_to_remove = [
+        entity for entity in current_entities 
+        if entity.entity_id not in configured_sensors
+    ]
 
+    # Entfernen Sie die nicht mehr konfigurierten Sensoren
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    entities_to_add = []
-    for sensor in configured_sensors:
-        new_sensor_id = f"{entry.entry_id}_{sensor}"
-        if new_sensor_id not in current_entities:
-            new_entity = MypvDevice(coordinator, sensor, entry.title)
-            entities_to_add.append(new_entity)
-    
-    
-    async_add_entities(entities_to_add)
+    # Erstellen Sie neue Entitäten für die konfigurierten Sensoren
+    entities = [
+        MypvDevice(coordinator, sensor, entry.title) 
+        for sensor in configured_sensors
+    ]
+
+    # Fügen Sie die neuen Entitäten hinzu
+    async_add_entities(entities)
+
     
 
 class MypvDevice(CoordinatorEntity):
