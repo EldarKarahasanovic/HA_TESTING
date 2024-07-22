@@ -9,9 +9,9 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 
-from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
+from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR, ENTITIES_NOT_TO_BE_REMOVED
 from .coordinator import MYPVDataUpdateCoordinator
-from.switch import ToggleSwitch
+from .switch import ToggleSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     sensors_to_remove = [
         entity for entity in current_entities 
-        if entity.entity_id not in configured_sensors
+        if entity.entity_id not in configured_sensors and entity.original_name not in ENTITIES_NOT_TO_BE_REMOVED
     ]
 
     _LOGGER.warning(f"Sensors to remove: {sensors_to_remove}")

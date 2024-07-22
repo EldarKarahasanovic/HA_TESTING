@@ -24,6 +24,8 @@ DEFAULT_MENU_OPTIONS = {
         "automatic_scan": "Automatic Scan in Your Network"
     }
 
+ENTITIES_NOT_TO_BE_REMOVED = ["Boost Button", "Device state"]
+
 # 1. Spalte Sensorname
 # 2. Spalte Einheit
 # 3. Spalte Icon
