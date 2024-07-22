@@ -3,7 +3,6 @@
 import logging
 from homeassistant.const import CONF_MONITORED_CONDITIONS
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.const import CONF_MONITORED
 from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfFrequency,
