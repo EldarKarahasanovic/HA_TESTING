@@ -3,6 +3,7 @@
 import logging
 from homeassistant.const import CONF_MONITORED_CONDITIONS
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.const import CONF_MONITORED
 from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfFrequency,
@@ -40,7 +41,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     sensors_to_remove = []
     for entity in current_entities:
-        if entity.entity_id not in configured_sensors and entity.original_name: #not in ENTITIES_NOT_TO_BE_REMOVED:
+        if entity.entity_id not in configured_sensors and entity.original_name not in ENTITIES_NOT_TO_BE_REMOVED:
             sensors_to_remove.append(entity)
 
 

@@ -18,7 +18,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     """Set up the toggle switch."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     host = entry.data[CONF_HOST]
+    existing_entities = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("entities", [])
+    if any(entity.unique_id == entry.entry_id for entity in existing_entities):
+        return True  
+
+    _LOGGER.warning("Adding toggle switch")
     async_add_entities([ToggleSwitch(coordinator, host, entry.title)], True)
+    
+    return True
+
+
 
 class ToggleSwitch(CoordinatorEntity, SwitchEntity):
     def __init__(self, coordinator, host, name):
