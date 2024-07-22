@@ -26,6 +26,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
     entity_registry = async_get(hass)
+    
     current_entities = [
         entity
         for entity in entity_registry.entities.values()
@@ -42,11 +43,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         new_sensor_id = f"{entry.entry_id}_{sensor}"
         new_sensor.append(new_sensor_id)
 
-    sensors_to_remove = set(current_sensor) - set(new_sensor)
-    for entity_id in sensors_to_remove:
-        # Correctly call async_remove with each entity_id
-        await entity_registry.async_remove(entity_id)
-
+    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
