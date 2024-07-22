@@ -26,32 +26,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-   # Holen Sie sich das Entity-Registry-Objekt
+   
     entity_registry = async_get(hass)
 
-    # Finden Sie alle aktuellen Entitäten für diese Domain und Konfigurationseintrag
     current_entities = [
         entity for entity in entity_registry.entities.values() 
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id
     ]
-
-    # Bestimmen Sie die Sensoren, die entfernt werden sollen
+    
     sensors_to_remove = [
         entity for entity in current_entities 
         if entity.entity_id not in configured_sensors
     ]
 
-    # Entfernen Sie die nicht mehr konfigurierten Sensoren
+    _LOGGER.warning(sensors_to_remove)
+
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    # Erstellen Sie neue Entitäten für die konfigurierten Sensoren
     entities = [
         MypvDevice(coordinator, sensor, entry.title) 
         for sensor in configured_sensors
     ]
 
-    # Fügen Sie die neuen Entitäten hinzu
     async_add_entities(entities)
 
     
