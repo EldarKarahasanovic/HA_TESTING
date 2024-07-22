@@ -56,12 +56,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(new_entity)
     _LOGGER.warning(f"Adding Entities: {entities}")
     
-    try:
-        async_add_entities(entities)
-    except Exception as ex:
-        _LOGGER.error(ex)
+    async_add_entities(entities)
 
-    
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""

@@ -276,6 +276,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 },
             )
 
+        # Handle the default monitored conditions
         default_monitored_conditions = (
             [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
         )
@@ -301,6 +302,10 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not await self.check_ip_device(self._host):
             return self.async_abort(reason="invalid_ip_address")
         await self._get_sensor(self._host)
+
+        user_input[CONF_MONITORED_CONDITIONS] = user_input.get(
+        CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED_CONDITIONS
+    )
         return await self.async_step_sensors(user_input)
     
     @staticmethod
