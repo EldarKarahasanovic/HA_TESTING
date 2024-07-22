@@ -42,7 +42,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         new_sensor_id = f"{entry.entry_id}_{sensor}"
         new_sensor.append(new_sensor_id)
 
-    sensors_to_remove = [entity for entity in current_sensor if entity.entity_id not in configured_sensors]
+    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
 
     for entity in sensors_to_remove:
