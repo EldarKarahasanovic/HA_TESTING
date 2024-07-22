@@ -8,10 +8,7 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfTemperature,
 )
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity_registry import async_get
+
 from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
 from.switch import ToggleSwitch
@@ -53,11 +50,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
-    host = entry.data[CONF_HOST]
-    toggle_switch_entity = ToggleSwitch(coordinator, host, entry.title)
-    entities_to_add.append(toggle_switch_entity)
-
-    async_add_entities(entities_to_add, True)
+    
+    async_add_entities(entities_to_add)
     
 
 class MypvDevice(CoordinatorEntity):
