@@ -27,33 +27,35 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entity_registry = async_get(hass)
 
-    # Collect current sensor and switch entity IDs
-    current_sensor_ids = set()
+    current_sensors = []
+    current_switches = []
+    
     for entity in entity_registry.entities.values():
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
-            if not entity.entity_id.endswith('_device_state'):
-                current_sensor_ids.add(entity.entity_id)
+            if entity.entity_id.endswith('_device_state'):
+                current_switches.append(entity.entity_id)
+            else:
+                current_sensors.append(entity.entity_id)
 
-    # Define new sensor IDs
-    new_sensor_ids = {f"{entry.entry_id}_{sensor}" for sensor in configured_sensors}
+    new_sensor = []
+    for sensor in configured_sensors:
+        new_sensor_id = f"{entry.entry_id}_{sensor}"
+        new_sensor.append(new_sensor_id)
 
-    # Determine sensors to remove
-    sensors_to_remove = [entity_id for entity_id in current_sensor_ids if entity_id not in new_sensor_ids]
+    sensors_to_remove = [entity for entity in current_sensors if entity.entity_id not in configured_sensors]
 
-    # Remove old sensors
-    for entity_id in sensors_to_remove:
-        entity_registry.async_remove(entity_id)
+    for entity in sensors_to_remove:
+        entity_registry.async_remove(entity.entity_id)
 
-    # Determine sensors to add
     entities_to_add = []
     for sensor in configured_sensors:
         new_sensor_id = f"{entry.entry_id}_{sensor}"
-        if new_sensor_id not in current_sensor_ids:
+        if new_sensor_id not in current_sensors:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
+    
     async_add_entities(entities_to_add)
-
     
 
 class MypvDevice(CoordinatorEntity):
