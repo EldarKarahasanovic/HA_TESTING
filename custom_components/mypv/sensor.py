@@ -11,6 +11,7 @@ from homeassistant.const import (
 
 from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
+from .switch import ToggleSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if new_sensor_id not in current_entities:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
+        entities_to_add.append(ToggleSwitch)
 
     async_add_entities(entities_to_add)
 
