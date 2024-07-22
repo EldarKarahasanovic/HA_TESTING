@@ -9,9 +9,6 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 
-from custom_components.mypv.button import BoostButton
-from custom_components.mypv.switch import ToggleSwitch
-
 from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
 
@@ -22,15 +19,6 @@ from homeassistant.helpers.entity_registry import async_get
 async def async_setup_entry(hass, entry, async_add_entities):
     """Add or update my-PV entry."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
-
-
-    if 'boost_button' not in hass.data[DOMAIN].get('buttons', []):
-        async_add_entities([BoostButton(coordinator, entry.data[CONF_HOST], entry.title)], True)
-        hass.data[DOMAIN]['buttons'] = ['boost_button']
-    
-    if 'toggle_switch' not in hass.data[DOMAIN].get('switches', []):
-        async_add_entities([ToggleSwitch(coordinator, entry.data[CONF_HOST], entry.title)], True)
-        hass.data[DOMAIN]['switches'] = ['toggle_switch']
 
     
     if CONF_MONITORED_CONDITIONS in entry.options:
