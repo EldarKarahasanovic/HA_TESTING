@@ -31,12 +31,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
     current_entities = []
     for entity in entity_registry.entities.values():
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
+            #if entity.name != "Device state":
             current_entities.append(entity)
 
     new_sensor = []
     for sensor in configured_sensors:
-        new_sensor = f"{entry.entry_id}_{sensor}"
-        new_sensor.append(new_sensor)
+        new_sensor_id = f"{entry.entry_id}_{sensor}"
+        new_sensor.append(new_sensor_id)
 
     sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
@@ -45,8 +46,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entities_to_add = []
     for sensor in configured_sensors:
-        new_sensor = f"{entry.entry_id}_{sensor}"
-        if new_sensor not in current_entities:
+        new_sensor_id = f"{entry.entry_id}_{sensor}"
+        if new_sensor_id not in current_entities:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
