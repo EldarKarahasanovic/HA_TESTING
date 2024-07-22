@@ -33,10 +33,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id
     ]
 
-    current_sensor = []
-    for entity in current_entities:
-        if isinstance(entity, MypvDevice):
-            current_sensor.append(entity.entity_id)
+    current_sensor = [entity.entity_id for entity in current_entities]
 
     new_sensor = []
     for sensor in configured_sensors:
