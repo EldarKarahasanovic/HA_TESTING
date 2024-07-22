@@ -261,19 +261,17 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
         self._errors = {}
-    
+        
         if user_input is not None:
             self._info['device'] = user_input.get('device', self._info.get('device'))
             self._info['number'] = user_input.get('number', self._info.get('number'))
-        
-            # Erstelle den Eintrag und bewahre die Sensoren auf
             return self.async_create_entry(
                 title=f"{self._devices[self._host]}",
                 data={
                     CONF_HOST: self._host,
                     CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
                     '_filtered_sensor_types': self._filtered_sensor_types,
-                    'selected_sensors': user_input[CONF_MONITORED_CONDITIONS],
+                    'selected_sensors': user_input[CONF_MONITORED_CONDITIONS], 
                 },
             )
 
@@ -292,7 +290,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
-
 
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
@@ -318,22 +315,24 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
         self.filtered_sensor_types = config_entry.data.get('_filtered_sensor_types', {})
-        self.selected_sensors = config_entry.data.get('selected_sensors', [])  # Retrieve stored sensors
+        self.selected_sensors = config_entry.data.get('selected_sensors', [])  
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            # Preserve existing configuration and update only the monitored conditions
-            data = {**self.config_entry.data, CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS]}
-            self.hass.config_entries.async_update_entry(self.config_entry, data=data)
-            return self.async_create_entry(title="", data={})
-
+            return self.async_create_entry(
+                title="",
+                data={
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                },
+            )
+    
         options_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS,
                     default=self.config_entry.options.get(
-                        CONF_MONITORED_CONDITIONS, self.selected_sensors  # Use stored sensors as default
+                        CONF_MONITORED_CONDITIONS, self.selected_sensors  
                     ),
                 ): cv.multi_select(self.filtered_sensor_types),
             }
