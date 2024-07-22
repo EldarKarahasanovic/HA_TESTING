@@ -11,7 +11,6 @@ from homeassistant.const import (
 
 from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
-from .switch import ToggleSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,39 +25,32 @@ async def async_setup_entry(hass, entry, async_add_entities):
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-    # Get existing entities
     entity_registry = async_get(hass)
     current_entities = [
-        entity
-        for entity in entity_registry.entities.values()
-        if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id
-    ]
-    
-    # Find and keep existing switch entities
-    existing_switches = [entity for entity in current_entities if isinstance(entity.entity_id, str) and entity.entity_id.endswith('device_state')]
-    
-    # Find new sensors to add
-    new_sensors = []
+    entity
+    for entity in entity_registry.entities.values()
+    if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id and entity.entity_type != "switch"
+]
+
+    new_sensor = []
     for sensor in configured_sensors:
         new_sensor_id = f"{entry.entry_id}_{sensor}"
-        if new_sensor_id not in [entity.entity_id for entity in current_entities]:
-            new_sensor = MypvDevice(coordinator, sensor, entry.title)
-            new_sensors.append(new_sensor)
+        new_sensor.append(new_sensor_id)
 
-    # Remove old sensor entities that are no longer configured
-    sensors_to_remove = [entity for entity in current_entities if isinstance(entity.entity_id, str) and entity.entity_id not in [f"{entry.entry_id}_{sensor}" for sensor in configured_sensors]]
-    
+    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
+
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    # Add new sensors
-    if new_sensors:
-        async_add_entities(new_sensors)
-
-    # Ensure the switch entity is present
-    if not existing_switches:
-        async_add_entities([ToggleSwitch(coordinator, entry.data[CONF_HOST], entry.title)], True)
-
+    entities_to_add = []
+    for sensor in configured_sensors:
+        new_sensor_id = f"{entry.entry_id}_{sensor}"
+        if new_sensor_id not in current_entities:
+            new_entity = MypvDevice(coordinator, sensor, entry.title)
+            entities_to_add.append(new_entity)
+    
+    
+    async_add_entities(entities_to_add)
     
 
 class MypvDevice(CoordinatorEntity):
