@@ -261,7 +261,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_sensors(self, user_input=None):
         """Handle the sensor selection step."""
         self._errors = {}
-    
+
         if user_input is not None:
             selected_sensors = user_input[CONF_MONITORED_CONDITIONS]
             self._info['device'] = user_input.get('device', self._info.get('device'))
@@ -275,14 +275,11 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     'selected_sensors': selected_sensors,
                 },
             )
-    
+
         default_monitored_conditions = (
             [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
         )
-    
-        if self._host in self._devices:
-            self._filtered_sensor_types = await self._get_filtered_sensor_types(self._host)
-    
+
         setup_schema = vol.Schema(
             {
                 vol.Required(
@@ -290,7 +287,7 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ): cv.multi_select(self._filtered_sensor_types),
             }
         )
-    
+
         return self.async_show_form(
             step_id="sensors", data_schema=setup_schema, errors=self._errors
         )
@@ -323,7 +320,6 @@ class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
-            _LOGGER.error("ES WIRD KONFIGURIERTTT")
             return self.async_create_entry(
                 title="",
                 data={
