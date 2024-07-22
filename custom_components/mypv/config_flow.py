@@ -308,8 +308,6 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return MypvOptionsFlowHandler(config_entry)
     
-
-
 class MypvOptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow"""
 
