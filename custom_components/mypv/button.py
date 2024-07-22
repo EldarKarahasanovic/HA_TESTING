@@ -20,8 +20,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     
     existing_entities = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("entities", [])
-    _LOGGER.warning(f"Existing Entities: {existing_entities}")
-    _LOGGER.warning(f"Entry ID: {entry.entry_id}")
+    _LOGGER.warning(f"Existing Entities button: {existing_entities}")
+    _LOGGER.warning(f"Entry ID button: {entry.entry_id}")
+    _LOGGER.warning(f"Entry UNIQUE ID button: {entry.unique_id}")
     if any(entity.unique_id == entry.entry_id for entity in existing_entities):
         _LOGGER.warning("Boost button already exists")
         return True 
