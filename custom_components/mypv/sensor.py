@@ -35,8 +35,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     new_sensor = []
     for sensor in configured_sensors:
-        new_sensor_id = f"{entry.entry_id}_{sensor}"
-        new_sensor.append(new_sensor_id)
+        new_sensor = f"{entry.entry_id}_{sensor}"
+        new_sensor.append(new_sensor)
 
     sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
@@ -45,12 +45,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entities_to_add = []
     for sensor in configured_sensors:
-        new_sensor_id = f"{entry.entry_id}_{sensor}"
-        if new_sensor_id not in current_entities:
+        new_sensor = f"{entry.entry_id}_{sensor}"
+        if new_sensor not in current_entities:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
     
-    
+    host = entry.data[CONF_HOST]
+    toggle_switch_entity = ToggleSwitch(coordinator, host, entry.title)
+    entities_to_add.append(toggle_switch_entity)
+
     async_add_entities(entities_to_add)
     
 
