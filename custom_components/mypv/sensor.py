@@ -2,7 +2,6 @@
 
 import logging
 from homeassistant.const import CONF_MONITORED_CONDITIONS
-from homeassistant.helpers.entity_registry import async_get_registry
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.const import (
     UnitOfElectricCurrent,
@@ -27,18 +26,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-    entity_registry = await async_get_registry(hass)
-    entity_names = {entity.entity_id: entity.name for entity in entity_registry.entities.values()}
-    _LOGGER.warning(f"Entity names 1: {entity_names}")
-
     entity_registry = async_get(hass)
     
     current_entities = []
     for entity in entity_registry.entities.values():
         if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
             current_entities.append(entity)
-           
-                
 
     new_sensor = []
     for sensor in configured_sensors:
