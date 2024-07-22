@@ -20,7 +20,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Add or update my-PV entry."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    
     if CONF_MONITORED_CONDITIONS in entry.options:
         configured_sensors = entry.options[CONF_MONITORED_CONDITIONS]
     else:
@@ -29,13 +28,18 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entity_registry = async_get(hass)
     current_entities = [entity for entity in entity_registry.entities.values() if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id]
 
-    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
+    current_sensor_ids = [sensor.entity_id for sensor in current_entities if isinstance(sensor, MypvDevice)]
+    new_sensor_ids = [f"{entry.entry_id}_{sensor}" for sensor in configured_sensors]
 
+    # Remove entities that are no longer in configuration
+    sensors_to_remove = [entity for entity in current_entities if isinstance(entity, MypvDevice) and f"{entry.entry_id}_{entity._sensor}" not in new_sensor_ids]
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    entities = [MypvDevice(coordinator, sensor, entry.title) for sensor in configured_sensors]
-    async_add_entities(entities)
+    # Add new entities
+    entities_to_add = [MypvDevice(coordinator, sensor, entry.title) for sensor in configured_sensors if f"{entry.entry_id}_{sensor}" not in current_sensor_ids]
+    async_add_entities(entities_to_add)
+
 
 
 
