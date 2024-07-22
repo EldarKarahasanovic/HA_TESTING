@@ -55,7 +55,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
         new_entity = MypvDevice(coordinator, sensor, entry.title)
         entities.append(new_entity)
     _LOGGER.warning(f"Adding Entities: {entities}")
-    async_add_entities(entities)
+    
+    try:
+        async_add_entities(entities)
+    except Exception as ex:
+        _LOGGER.error(ex)
 
     
 
