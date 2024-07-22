@@ -11,7 +11,6 @@ from homeassistant.const import (
 
 from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
-from .switch import ToggleSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +51,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     
     async_add_entities(entities_to_add)
-    ToggleSwitch.async_setup_entry(hass, entry, async_add_entities)
     
 
 class MypvDevice(CoordinatorEntity):
