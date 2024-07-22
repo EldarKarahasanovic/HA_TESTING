@@ -49,12 +49,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if new_sensor_id not in current_entities:
             new_entity = MypvDevice(coordinator, sensor, entry.title)
             entities_to_add.append(new_entity)
-        
-    switch_entity = ToggleSwitch(coordinator, entry.data[CONF_HOST], entry.title)
-    if switch_entity.unique_id not in [entity.unique_id for entity in current_entities]:
-        entities_to_add.append(switch_entity)
+    
     
     async_add_entities(entities_to_add)
+    ToggleSwitch.async_setup_entry(hass, entry, async_add_entities)
+    
 
 class MypvDevice(CoordinatorEntity):
     """Representation of a my-PV device."""
