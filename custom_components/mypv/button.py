@@ -1,47 +1,39 @@
-"""Button entity"""
-
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.const import CONF_HOST
-
-from .const import DOMAIN, DATA_COORDINATOR
-from .coordinator import MYPVDataUpdateCoordinator
-
 import aiohttp
 import logging
+
+from .const import DOMAIN, DATA_COORDINATOR
 
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the boost button"""
+    """Set up the boost button."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     host = entry.data[CONF_HOST]
-    
-    existing_entities = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("entities", [])
-    _LOGGER.warning(f"Existing Entities button: {existing_entities}")
-    _LOGGER.warning(f"Entry ID button: {entry.entry_id}")
-    _LOGGER.warning(f"Entry UNIQUE ID button: {entry.unique_id}")
-    if any(entity.unique_id == entry.entry_id for entity in existing_entities):
-        _LOGGER.warning("Boost button already exists")
-        return True 
 
-    _LOGGER.warning("Adding boost button")
+    # Ensure no duplicate entities are added
+    existing_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get("entities", [])
+    if any(entity.unique_id == BoostButton.get_unique_id(host) for entity in existing_entities):
+        _LOGGER.debug("Boost button entity already exists")
+        return
+
+    _LOGGER.debug("Adding boost button")
     async_add_entities([BoostButton(coordinator, host, entry.title)], True)
-
-    return True
 
 class BoostButton(CoordinatorEntity, ButtonEntity):
     def __init__(self, coordinator, host, name) -> None:
-        """Initialize the button"""
+        """Initialize the button."""
         super().__init__(coordinator)
         self._icon = "mdi:heat-wave"
         self._name = "Boost button"
         self._device_name = name
         self._host = host
-        self._model = self.coordinator.data["info"]["device"]
-        self.serial_number = self.coordinator.data["info"]["sn"]
+        self._model = self.coordinator.data.get("info", {}).get("device", "Unknown")
+        self.serial_number = self.coordinator.data.get("info", {}).get("sn", "Unknown")
         self._button = "boost_button"
 
     @property
@@ -65,17 +57,22 @@ class BoostButton(CoordinatorEntity, ButtonEntity):
     @property
     def unique_id(self):
         """Return unique id based on device serial and variable."""
-        return "{}_{}".format(self.serial_number, self._button)
+        return BoostButton.get_unique_id(self._host)
+
+    @staticmethod
+    def get_unique_id(host):
+        """Generate unique ID for the button entity."""
+        return f"{DOMAIN}_{host}_boost_button"
 
     async def async_press(self) -> None:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://{self._host}/data.jsn") as response:
                 if response.status == 200:
                     data = await response.json()
-                    boostActive = data.get("boostactive")
-                    newBoost = not boostActive
-                    async with session.get(f"http://{self._host}/data.jsn?bststrt={int(newBoost)}") as response2:
+                    boost_active = data.get("boostactive", False)
+                    new_boost = not boost_active
+                    async with session.get(f"http://{self._host}/data.jsn?bststrt={int(new_boost)}") as response2:
                         if response2.status != 200:
                             _LOGGER.error("Failed to (de-)activate boost")
                 else:
-                    _LOGGER.error("Failed to (de-)activate boost")
+                    _LOGGER.error("Failed to get boost status")
