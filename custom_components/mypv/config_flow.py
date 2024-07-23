@@ -23,6 +23,7 @@ from .const import DOMAIN, SENSOR_TYPES, DEFAULT_MENU_OPTIONS
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MONITORED_CONDITIONS = [
+    "screen_mode_flag"
     "temp1"
 ]
 
