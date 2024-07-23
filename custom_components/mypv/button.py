@@ -1,52 +1,81 @@
-import logging
+"""Button entity"""
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity_platform import async_add_entities
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.const import CONF_HOST
 
-from .const import DOMAIN, DATA_COORDINATOR, CONF_HOST, PLATFORMS
+from .const import DOMAIN, DATA_COORDINATOR
+from .coordinator import MYPVDataUpdateCoordinator
+
+import aiohttp
+import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the boost button."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    """Set up the boost button"""
+    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     host = entry.data[CONF_HOST]
     
-    # Check if the entity is already set up
     existing_entities = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("entities", [])
-    if any(entity.unique_id == f"{entry.entry_id}_boost_button" for entity in existing_entities):
-        _LOGGER.debug("Boost button already exists")
-        return True
+    _LOGGER.warning(f"Existing Entities button: {existing_entities}")
+    _LOGGER.warning(f"Entry ID button: {entry.entry_id}")
+    _LOGGER.warning(f"Entry UNIQUE ID button: {entry.unique_id}")
+    if any(entity.unique_id == entry.entry_id for entity in existing_entities):
+        _LOGGER.warning("Boost button already exists")
+        return True 
 
-    # Add new boost button
-    _LOGGER.debug("Adding boost button")
+    _LOGGER.warning("Adding boost button")
     async_add_entities([BoostButton(coordinator, host, entry.title)], True)
 
     return True
 
-class BoostButton(ButtonEntity):
-    """Representation of a Boost Button."""
-
-    def __init__(self, coordinator, host, title):
-        """Initialize the button."""
-        self.coordinator = coordinator
-        self.host = host
-        self._title = title
-        self._unique_id = f"{self.host}_boost_button"
-        self._name = f"{self._title} Boost Button"
-
-    @property
-    def unique_id(self):
-        """Return the unique ID of the button."""
-        return self._unique_id
+class BoostButton(CoordinatorEntity, ButtonEntity):
+    def __init__(self, coordinator, host, name) -> None:
+        """Initialize the button"""
+        super().__init__(coordinator)
+        self._icon = "mdi:heat-wave"
+        self._name = "Boost button"
+        self._device_name = name
+        self._host = host
+        self._model = self.coordinator.data["info"]["device"]
+        self.serial_number = self.coordinator.data["info"]["sn"]
+        self._button = "boost_button"
 
     @property
     def name(self):
-        """Return the name of the button."""
         return self._name
+    
+    @property 
+    def icon(self):
+        return self._icon
+    
+    @property
+    def device_info(self):
+        """Return information about the device."""
+        return {
+            "identifiers": {(DOMAIN, self.serial_number)},
+            "name": self._device_name,
+            "manufacturer": "my-PV",
+            "model": self._model,
+        }
+    
+    @property
+    def unique_id(self):
+        """Return unique id based on device serial and variable."""
+        return "{}_{}".format(self.serial_number, self._button)
 
-    async def async_press(self):
-        """Handle the button press action."""
-        # Implement the button press logic here
-        pass
+    async def async_press(self) -> None:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"http://{self._host}/data.jsn") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    boostActive = data.get("boostactive")
+                    newBoost = not boostActive
+                    async with session.get(f"http://{self._host}/data.jsn?bststrt={int(newBoost)}") as response2:
+                        if response2.status != 200:
+                            _LOGGER.error("Failed to (de-)activate boost")
+                else:
+                    _LOGGER.error("Failed to (de-)activate boost")
