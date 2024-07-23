@@ -293,7 +293,12 @@ class MypvConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_import(self, user_input=None):
         """Import a config entry."""
         if self._host_in_configuration_exists(user_input[CONF_HOST]):
-            return self.async_abort(reason="host_exists")
+            # Remove the existing config entry
+            existing_entry = self.hass.config_entries.async_entries(DOMAIN)
+            for entry in existing_entry:
+                if entry.data.get(CONF_HOST) == user_input[CONF_HOST]:
+                    self.hass.config_entries.async_remove(entry.entry_id)
+                    break
         self._host = user_input[CONF_HOST]
         if not await self.check_ip_device(self._host):
             return self.async_abort(reason="invalid_ip_address")
