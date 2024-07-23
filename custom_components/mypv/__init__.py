@@ -11,7 +11,7 @@ import homeassistant.helpers.config_validation as cv
 
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.core import HomeAssistant
-
+from homeassistant.helpers import update_coordinator
 from .const import DOMAIN, SENSOR_TYPES, DATA_COORDINATOR, PLATFORMS
 from .coordinator import MYPVDataUpdateCoordinator
 
@@ -49,26 +49,21 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Load the saved entities."""
-    coordinator = MYPVDataUpdateCoordinator(
+    """Set up the platform from a config entry."""
+    coordinator = update_coordinator.DataUpdateCoordinator(
         hass,
-        config=entry.data,
-        options=entry.options,
+        update_method=fetch_data_from_api,
+        name="my_domain",
     )
-
-    await coordinator.async_refresh()
-
-    # Reload entry when its updated.
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
-
+    
+    hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_COORDINATOR: coordinator,
+        "entities": []
     }
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "switch", "button"])
+    for platform in PLATFORMS:
+        await hass.config_entries.async_forward_entry_setup(entry, platform)
 
     return True
 

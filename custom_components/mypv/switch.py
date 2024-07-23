@@ -1,90 +1,65 @@
+import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.const import CONF_HOST
-import aiohttp
-import logging
+from homeassistant.helpers.entity_platform import async_add_entities
 
-from .const import DOMAIN, DATA_COORDINATOR
+from .const import DOMAIN, DATA_COORDINATOR, CONF_HOST, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     """Set up the toggle switch."""
-    coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     host = entry.data[CONF_HOST]
+    
+    # Check if the entity is already set up
+    existing_entities = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("entities", [])
+    if any(entity.unique_id == f"{entry.entry_id}_device_state" for entity in existing_entities):
+        _LOGGER.debug("Toggle switch already exists")
+        return True  
 
-    # Ensure no duplicate entities are added
-    existing_entities = hass.data[DOMAIN].get(entry.entry_id, {}).get("entities", [])
-    if any(entity.unique_id == ToggleSwitch.get_unique_id(host) for entity in existing_entities):
-        _LOGGER.debug("Toggle switch entity already exists")
-        return
-
+    # Add new toggle switch
     _LOGGER.debug("Adding toggle switch")
     async_add_entities([ToggleSwitch(coordinator, host, entry.title)], True)
-    
-class ToggleSwitch(CoordinatorEntity, SwitchEntity):
-    def __init__(self, coordinator, host, name):
+
+    return True
+
+class ToggleSwitch(SwitchEntity):
+    """Representation of a Toggle Switch."""
+
+    def __init__(self, coordinator, host, title):
         """Initialize the switch."""
-        super().__init__(coordinator)
-        self._device_name = name
-        self._name = "Device state"
-        self._switch = "device_state"
-        self._host = host
-        self._icon = "mdi:power"
-        self._is_on = self.coordinator.data.get("setup", {}).get("devmode", False)
-        self._model = self.coordinator.data.get("info", {}).get("device", "Unknown")
-        self.serial_number = self.coordinator.data.get("info", {}).get("sn", "Unknown")
-    
+        self.coordinator = coordinator
+        self.host = host
+        self._title = title
+        self._unique_id = f"{self.host}_device_state"
+        self._name = f"{self._title} Device State"
+        self._is_on = False
+
     @property
-    def is_on(self):
-        if self.coordinator.data:
-            self._is_on = self.coordinator.data.get("setup", {}).get("devmode", False)
-        return self._is_on
+    def unique_id(self):
+        """Return the unique ID of the switch."""
+        return self._unique_id
 
     @property
     def name(self):
+        """Return the name of the switch."""
         return self._name
-    
-    @property
-    def icon(self):
-        return self._icon
-    
-    @property
-    def device_info(self):
-        """Return information about the device."""
-        return {
-            "identifiers": {(DOMAIN, self.serial_number)},
-            "name": self._device_name,
-            "manufacturer": "my-PV",
-            "model": self._model,
-        }
-    
-    @property
-    def unique_id(self):
-        """Return unique id based on device serial and variable."""
-        return ToggleSwitch.get_unique_id(self._host)
 
-    @staticmethod
-    def get_unique_id(host):
-        """Generate unique ID for the switch entity."""
-        return f"{DOMAIN}_{host}_device_state"
+    @property
+    def is_on(self):
+        """Return the current state of the switch."""
+        return self._is_on
 
-    async def async_turn_on(self):
-        await self.async_toggle_switch(1)
+    async def async_turn_on(self, **kwargs):
+        """Turn the switch on."""
+        # Implement the logic to turn the switch on
         self._is_on = True
-        await self.coordinator.async_refresh()
         self.async_write_ha_state()
 
-    async def async_turn_off(self):
-        await self.async_toggle_switch(0)
+    async def async_turn_off(self, **kwargs):
+        """Turn the switch off."""
+        # Implement the logic to turn the switch off
         self._is_on = False
-        await self.coordinator.async_refresh()
         self.async_write_ha_state()
-    
-    async def async_toggle_switch(self, mode):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://{self._host}/data.jsn?devmode={mode}") as response:
-                if response.status != 200:
-                    _LOGGER.error(f"Failed to turn on/off the device {self.unique_id}")
