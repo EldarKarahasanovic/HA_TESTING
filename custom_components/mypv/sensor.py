@@ -9,9 +9,8 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 
-from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR, ENTITIES_NOT_TO_BE_REMOVED
+from .const import SENSOR_TYPES, DOMAIN, DATA_COORDINATOR
 from .coordinator import MYPVDataUpdateCoordinator
-from .switch import ToggleSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,42 +20,23 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Add or update my-PV entry."""
     coordinator: MYPVDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
+    
     if CONF_MONITORED_CONDITIONS in entry.options:
         configured_sensors = entry.options[CONF_MONITORED_CONDITIONS]
     else:
         configured_sensors = entry.data[CONF_MONITORED_CONDITIONS]
 
-   
     entity_registry = async_get(hass)
+    current_entities = [entity for entity in entity_registry.entities.values() if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id]
 
-    
-    current_entities = []
-    for entity in entity_registry.entities.values():
-        if entity.platform == DOMAIN and entity.config_entry_id == entry.entry_id:
-            current_entities.append(entity)
-
-
-    _LOGGER.warning(f"Current Entities: {current_entities}")
-
-    sensors_to_remove = []
-    for entity in current_entities:
-        if entity.entity_id not in configured_sensors and entity.original_name not in ENTITIES_NOT_TO_BE_REMOVED:
-            sensors_to_remove.append(entity)
-
-
-    _LOGGER.warning(f"Sensors to remove: {sensors_to_remove}")
-    _LOGGER.warning(f"Configured sensors: {configured_sensors}")
+    sensors_to_remove = [entity for entity in current_entities if entity.entity_id not in configured_sensors]
 
     for entity in sensors_to_remove:
         entity_registry.async_remove(entity.entity_id)
 
-    entities = []
-    for sensor in configured_sensors:
-        new_entity = MypvDevice(coordinator, sensor, entry.title)
-        entities.append(new_entity)
-    _LOGGER.warning(f"Adding Entities: {entities}")
-    
+    entities = [MypvDevice(coordinator, sensor, entry.title) for sensor in configured_sensors]
     async_add_entities(entities)
+
 
 
 class MypvDevice(CoordinatorEntity):
@@ -87,27 +67,11 @@ class MypvDevice(CoordinatorEntity):
         """Return the state of the device."""
         try:
             state = self.coordinator.data[self._data_source][self.type]
-            if self.type == "screen_mode_flag":
-                if state == 0:
-                    state = "Standby"
-                elif state == 1:
-                    state = "Heizen"
-                elif state == 2:
-                    state = "Heizen Sicherstellung"
-                elif state == 3:
-                    state = "Heizen beendet"
-                elif state == 4:
-                    state = "Keine Verbindung / Deaktiviert"
-                elif state == 5:
-                    state = "Fehler"
-                elif state == 6:
-                    state = "Sperrzeit aktiv"
-                    
             if self.type == "power_act":
-                relOut = int(self.coordinator.data[self._data_source].get("rel1_out", None))
-                loadNom = int(self.coordinator.data[self._data_source].get("load_nom", None))
                 if relOut is not None and loadNom is not None:
-                    state = (relOut * loadNom) + int(state)
+                    relOut = int(self.coordinator.data[self._data_source]["rel1_out"])
+                    loadNom = int(self.coordinator.data[self._data_source]["load_nom"])
+                state = (relOut * loadNom) + int(state)
             self._last_value = state
         except Exception as ex:
             _LOGGER.error(ex)
